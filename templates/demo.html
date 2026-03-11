@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <span class="eyebrow">Demo</span>
+        <h2>Analíticas de vídeo</h2>
+        <p style="text-align: justify;"><b>{{ site.brand }}</b> ha implementado analíticas de vídeo para mejorar la seguridad en las principales calles de la ciudad. Es posible
+        reconocer en tiempo real todo tipo de objetos (personas, vehículos), y a su vez analizar comportamientos para anticipar
+        situaciones delictivas, como el MERODEO que realiza un delincuente a un local o establecimiento.</p>
+    </div>
+</section>
+<section class="section">
+    <div class="container cards cards-2">
+        <article class="card-video demo-box">
+            <h3>Detección en tiempo real</h3>
+            <p>Detección y búsqueda de objetos, es posible entrenar un sistema para reconocer en tiempo real todo tipo de objetos (personas, vehículos, etc.) y a su vez identificar potenciales delitos.</p>
+            <div class="placeholder">
+                <iframe style="border-radius: 12px;" width="100%" height="290" src="https://www.youtube.com/embed/snWU3HnrEmI?list=PLT7im8U9JgylZUT_RG5EOzn5Ir78ax6Qz" title="Detección y búsqueda de objetos en tiempo real" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </article>
+        <article class="card-video demo-box">
+            <h3>Panel de eventos</h3>
+            <p>Detección del merodeo de presuntos ladrones, es posible reconocer en tiempo real si una o varias personas acechan o merodean una casa con la intención ingresar a robar a dicho inmueble.</p>
+            <div class="placeholder">
+                <iframe style="border-radius: 12px;" width="100%" height="290" src="https://www.youtube.com/embed/vKBoSdh_LtY?list=PLT7im8U9JgylZUT_RG5EOzn5Ir78ax6Qz" title="Merodeo de ladrones en tiempo real" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </article>
+    </div>
+</section>
+{% endblock %}

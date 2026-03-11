@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <span class="eyebrow">Aprendizaje Automático</span>
+        <h2>Machine Learning ML</h2>
+        <p style="text-align: justify;">
+            ML - Rama de la Inteligencia Artificial <b>IA</b> que permite a los sistemas aprender a partir de grandes cantidades de datos, para realizar 
+            predicciones. <br>
+            IncaB1T - Tecnología capaz de analizar imágenes o videos, reconocer objetos y tomar decisiones automáticas basado en patrones aprendidos.
+        </p>
+        <div class="hero-img">
+            <img class="image" src="../static/img/incabit-flowML.jpg" />
+            <div class="overlay">.</div>
+        </div>
+    </div>
+</section>
+<section class="section">
+    <div class="container cards cards-2">
+        <article class="card"><h3>Aprendizaje Supervizado</h3><p style="text-align: justify;">
+            Modelo de ML que <b>utiliza datos de entrenamiento etiquetados</b>, donde SI se conoce la salida y el modelo se entrena con los datos de la salida 
+            conocidos. En términos sencillos, para entrenar al algoritmo que reconozca fotos de manzanas, se deben ingresar fotos etiquetadas de manzanas, 
+            como datos de entrada.
+        </p></article>
+        <article class="card"><h3>Aprendizaje No Supervizado</h3><p style="text-align: justify;">
+            Modelo de ML que <b>utiliza datos sin etiquetar</b>. La precisión de la salida NO se conoce, el algoritmo aprende sin intervención humana 
+            y los categoriza en grupos según los atributos. Si el algoritmo recibe imágenes de manzanas y platános, trabajará por sí solo para categorizar 
+            qué imagen es una manzana y cuál es un plátano.
+        </p></article>
+        <!-- <article class="card"><h3>Analítica predictiva</h3><ul><li>Patrones de conducta</li><li>Predicción de acciones probables</li><li>Alertas tempranas</li><li>Apoyo a centros de monitoreo</li></ul></article> -->
+    </div>
+</section>
+{% endblock %}

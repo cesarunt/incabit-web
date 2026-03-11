@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+    <div class="container hero-grid">
+        <div>
+            <span class="eyebrow">IA visual aplicada</span>
+            <h1>{{ site.tagline }}</h1>
+            <p class="lead">
+                <b>{{ site.brand }}</b> transforma datos y patrones visuales (fotos, imágenes, vídeos), en alertas, 
+                y predicciones para la seguridad, transporte y monitoreo inteligente.
+            </p>
+            <div class="hero-actions">
+                <a href="{{ url_for('soluciones') }}" class="btn">Ver soluciones</a>
+                <a href="{{ url_for('demo') }}" class="btn btn-outline">Solicitar demo</a>
+            </div>
+        </div>
+        <div class="hero-card">
+            <div class="screen">
+                <div class="screen-bar"></div>
+                <div class="screen-body">
+                    <div class="bbox bbox-1">persona</div>
+                    <div class="bbox bbox-2">vehículo</div>
+                    <div class="bbox bbox-3">objeto</div>
+                    <div class="screen-lines"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <span class="eyebrow">Qué hace incaB1T</span>
+            <h2>Plataforma de inteligencia artificial para analizar información y reconocer objetos</h2>
+            <p>El sitio se orienta a la detección de objetos, análisis de comportamiento, búsqueda de personas y vehículos, 
+            reconocimiento de placas y rostros, y generación de alertas en tiempo real.</p>
+        </div>
+
+        <div class="cards cards-4">
+            <article class="card"><h3>Detección de objetos</h3><p>Reconoce personas, vehículos y otros objetos relevantes en tiempo real.</p></article>
+            <article class="card"><h3>Análisis de comportamiento</h3><p>Identifica merodeo, permanencia prolongada e intrusión en zonas definidas.</p></article>
+            <article class="card"><h3>Búsqueda inteligente</h3><p>Ubica personas, vehículos y eventos relevantes dentro de flujos de video.</p></article>
+            <article class="card"><h3>Alertas predictivas</h3><p>Genera señales tempranas para anticipar acciones y apoyar la toma de decisiones.</p></article>
+        </div>
+    </div>
+</section>
+{% endblock %}

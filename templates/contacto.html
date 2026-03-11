@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <span class="eyebrow">Contacto</span>
+        <h1>Contáctanos</h1>
+        <p>Cuéntanos qué deseas monitorear y preparamos una propuesta.</p>
+    </div>
+</section>
+<section class="section">
+    <div class="container contact-grid">
+        <form class="card contact-form">
+            <label>Nombre<input type="text" placeholder="Tu nombre"></label>
+            <label>Correo<input type="email" placeholder="correo@empresa.com"></label>
+            <label>Organización<input type="text" placeholder="Municipalidad / empresa"></label>
+            <label>Mensaje<textarea rows="6" placeholder="Describe tu necesidad"></textarea></label>
+            <button type="button" class="btn">Enviar</button>
+        </form>
+        <div class="card contact-info">
+            <h3>Datos de contacto</h3>
+            <p><strong>Correo:</strong> {{ site.email }}</p>
+            <p><strong>Teléfono:</strong> {{ site.phone }}</p>
+            <p><strong>WhatsApp:</strong> {{ site.whatsapp }}</p>
+            <p><strong>País:</strong> Perú</p>
+        </div>
+    </div>
+</section>
+{% endblock %}
