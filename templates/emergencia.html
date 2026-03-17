@@ -5,45 +5,57 @@
         <span class="eyebrow">Emergencia</span>
         <h2>Transmitir emergencia en vivo</h2>
         <p style="text-align: justify;">
-            <b>{{ site.brand }}</b> te permite hacer una tramsmisón en vivo desde tu celular o una transmisión local desde las cámaras de la municipalidad, y al mismo tiempo aplicar analíticas basadas en Machine Learning.
+            <b>{{ site.brand }}</b> te permite hacer una transmisión en vivo desde tu celular
+            o una transmisión local desde las cámaras de la municipalidad, y al mismo tiempo
+            aplicar analíticas basadas en Machine Learning.
         </p>
         <div class="hero-actions">
-            <a href="{{ url_for('emergencia') }}" class="btn">Reportar Emergencia</a>
+            <a href="{{ url_for('emergencia_reportar') }}" class="btn">Reportar Emergencia</a>
         </div>
     </div>
 </section>
+
 <section class="section">
     <div class="container cards cards-2">
         <article class="card">
             <h3>Alerta Ciudadana</h3>
             <ul>
                 <li>Transmisión <b><span style="color: #5CCCF5;">en vivo</span></b> gratuita, por un periodo de 10 seg.</li>
-                <li>Detección de objetos en tiempo real (personas y vehículos)</li>
-                <li>Merodeo e intrusiones en el hogar</li>
-                <li>Conteo de personas en el hogar</li>
-                <li>Alertas por eventos</li>
+                <li>Detección de objetos en tiempo real (personas y vehículos).</li>
+                <li>Merodeo e intrusiones en el hogar.</li>
+                <li>Conteo de personas en el hogar.</li>
+                <li>Alertas por eventos.</li>
             </ul>
-            <!-- <div class="hero-img">
-                <img class="image" src="../static/img/incabit-solutions-transport.png" />
-            </div> -->
+            <div class="hero-actions" style="margin-top: 18px;">
+                <a href="{{ url_for('emergencia_reportar') }}" class="btn">Iniciar Alerta Ciudadana</a>
+            </div>
         </article>
+
         <article class="card">
             <h3>Alerta Municipal</h3>
             <ul>
                 <li>Transmisión <b><span style="color: #666;">local</span></b> con el municipio, hasta por 60 seg.</li>
-                <li>Detección de objetos en tiempo real (personas, vehículos, armas, etc.)</li>
-                <li>Merodeo e intrusión de ladrones en locales municipales</li>
-                <li>Conteo de personas en locales municipales</li>
+                <li>Detección de objetos en tiempo real (personas, vehículos, armas, etc.).</li>
+                <li>Merodeo e intrusión de ladrones en locales municipales.</li>
+                <li>Conteo de personas en locales municipales.</li>
             </ul>
-            <!-- <div class="hero-img">
-                <img class="image" src="../static/img/incabit-solutions-security.png" />
-            </div> -->
+            <div class="hero-actions" style="margin-top: 18px;">
+                <a href="{{ url_for('contacto') }}" class="btn">Solicitar Integración</a>
+            </div>
         </article>
     </div>
-    
-    <!-- <div class="container cards cards-2">
-        <article class="card"><h3>Analítica predictiva</h3><ul><li>Patrones de conducta</li><li>Predicción de acciones probables</li><li>Alertas tempranas</li><li>Apoyo a centros de monitoreo</li></ul></article>
-    </div> -->
-    
+</section>
+
+<section class="section">
+    <div class="container">
+        <article class="card">
+            <h3>Módulo de Emergencias Ciudadanas</h3>
+            <p style="text-align: justify;">
+                En esta primera fase el ciudadano podrá registrar un incidente, adjuntar una imagen
+                tomada desde el celular o cargada desde la galería, y capturar automáticamente su
+                ubicación GPS para generar un código de seguimiento.
+            </p>
+        </article>
+    </div>
 </section>
 {% endblock %}

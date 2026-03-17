@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="page-hero">
+    <div class="container">
+        <span class="eyebrow">Estado del Incidente</span>
+        <h2>Reporte registrado correctamente</h2>
+        <p>Tu código de seguimiento es: <b>{{ codigo }}</b></p>
+
+        {% if tipo %}
+            <p>Tipo de reporte: <b>{{ tipo|capitalize }}</b></p>
+        {% endif %}
+
+        <div class="hero-actions">
+            <a href="{{ url_for('emergencia') }}" class="btn">Volver a Emergencia</a>
+            <a href="{{ url_for('emergencia_reportar') }}" class="btn">Registrar otro incidente</a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

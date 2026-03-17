@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="page-hero">
+    <div class="container">
+        <span class="eyebrow">Reportar Emergencia</span>
+        <h2>Registro ciudadano de incidentes</h2>
+        <p style="text-align: justify;">
+            Completa la información del incidente. La ubicación se obtendrá automáticamente
+            desde el celular y podrás adjuntar una imagen recién tomada o cargada desde tu dispositivo.
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <article class="card flash-message {% if category == 'success' %}flash-success{% else %}flash-error{% endif %}">
+                        <p style="margin: 0;"><b>{{ message }}</b></p>
+                    </article>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <article class="card">
+            <form method="POST" enctype="multipart/form-data" id="form-emergencia">
+                <div style="display: grid; gap: 18px;">
+
+                    <div>
+                        <label for="tipo_reporte"><b>Tipo de reporte</b></label><br><br>
+                        <select id="tipo_reporte" name="tipo_reporte" style="width: 100%; padding: 12px; border-radius: 10px;">
+                            <option value="">Seleccionar</option>
+                            <option value="robo">Robo</option>
+                            <option value="merodeo">Merodeo sospechoso</option>
+                            <option value="violencia">Violencia</option>
+                            <option value="accidente">Accidente</option>
+                            <option value="vandalismo">Vandalismo</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="descripcion"><b>Descripción del incidente</b></label><br><br>
+                        <textarea
+                            id="descripcion"
+                            name="descripcion"
+                            rows="5"
+                            placeholder="Describe brevemente lo ocurrido..."
+                            style="width: 100%; padding: 12px; border-radius: 10px;"
+                        ></textarea>
+                    </div>
+
+                    <div class="cards cards-2">
+                        <div class="card">
+                            <label for="latitud"><b>Latitud</b></label><br><br>
+                            <input
+                                type="text"
+                                id="latitud"
+                                name="latitud"
+                                readonly
+                                placeholder="Obteniendo ubicación..."
+                                style="width: 100%; padding: 12px; border-radius: 10px;"
+                            >
+                        </div>
+
+                        <div class="card">
+                            <label for="longitud"><b>Longitud</b></label><br><br>
+                            <input
+                                type="text"
+                                id="longitud"
+                                name="longitud"
+                                readonly
+                                placeholder="Obteniendo ubicación..."
+                                style="width: 100%; padding: 12px; border-radius: 10px;"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <label for="evidencia"><b>Imagen de evidencia</b></label><br><br>
+                        <input
+                            type="file"
+                            id="evidencia"
+                            name="evidencia"
+                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            capture="environment"
+                            style="width: 100%; padding: 12px; border-radius: 10px;"
+                        >
+                        <p style="margin-top: 10px; color: #aaa;">
+                            Puedes tomar una foto con la cámara del celular o seleccionar una imagen existente.
+                        </p>
+
+                        <div id="preview-wrapper" style="display:none; margin-top: 14px;">
+                            <img
+                                id="preview-image"
+                                src=""
+                                alt="Vista previa"
+                                style="max-width: 100%; border-radius: 12px; border: 1px solid #333;"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="hero-actions">
+                        <button type="submit" class="btn">Enviar Emergencia</button>
+                        <a href="{{ url_for('emergencia') }}" class="btn">Volver</a>
+                    </div>
+                </div>
+            </form>
+        </article>
+    </div>
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const latitudInput = document.getElementById("latitud");
+    const longitudInput = document.getElementById("longitud");
+    const evidenciaInput = document.getElementById("evidencia");
+    const previewWrapper = document.getElementById("preview-wrapper");
+    const previewImage = document.getElementById("preview-image");
+
+    function obtenerUbicacion() {
+        if (!navigator.geolocation) {
+            latitudInput.placeholder = "GPS no soportado";
+            longitudInput.placeholder = "GPS no soportado";
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            function (position) {
+                latitudInput.value = position.coords.latitude.toFixed(8);
+                longitudInput.value = position.coords.longitude.toFixed(8);
+            },
+            function (error) {
+                latitudInput.value = "";
+                longitudInput.value = "";
+
+                if (error.code === 1) {
+                    latitudInput.placeholder = "Permiso denegado";
+                    longitudInput.placeholder = "Permiso denegado";
+                } else if (error.code === 2) {
+                    latitudInput.placeholder = "Ubicación no disponible";
+                    longitudInput.placeholder = "Ubicación no disponible";
+                } else {
+                    latitudInput.placeholder = "No se pudo obtener";
+                    longitudInput.placeholder = "No se pudo obtener";
+                }
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    }
+
+    evidenciaInput.addEventListener("change", function (event) {
+        const file = event.target.files[0];
+        if (!file) {
+            previewWrapper.style.display = "none";
+            previewImage.src = "";
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            previewImage.src = e.target.result;
+            previewWrapper.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+    });
+
+    obtenerUbicacion();
+});
+</script>
+
+{% endblock %}

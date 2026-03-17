@@ -11,7 +11,10 @@ a{color:inherit;text-decoration:none} .container{width:min(1120px, calc(100% - 2
 .site-nav{display:flex;align-items:center;gap:1.25rem}.site-nav a{color:var(--muted)} .site-nav a:hover{color:#fff !important}
 .menu-toggle{display:none;background:none;border:none;color:#fff;font-size:1.4rem}
 .btn{display:inline-flex;align-items:center;justify-content:center;padding:.75rem 1.25rem;border-radius:10px;background:var(--blue);color:#001018;font-weight:800;border:1px solid var(--blue)}
-.btn-outline{background:transparent;color:#fff}.btn-sm{padding:.35rem 1rem;color: var(--panel) !important;}
+.btn-outline{background:transparent;border: 1px solid #5CCCF5; color: #5CCCF5;}
+.btn-outline:hover { background: rgba(92, 204, 245, 0.08); }
+.section-head { margin-bottom: 24px;}
+.btn-sm{padding:.35rem 1rem;color: var(--panel) !important;}
 .hero,.section{padding:1.25rem 0}.hero-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:1.5rem;align-items:center}
 .eyebrow{display:inline-block;margin-bottom:1rem;padding:.35rem .75rem;border:1px solid rgba(91,210,255,.22);color:var(--blue);border-radius:999px;background:rgba(91,210,255,.08);font-size:.9rem;font-weight:700}
 h1,h2,h3,h4{line-height:1.1;margin:0 0 1rem} h1{font-size:clamp(2.4rem,4vw,4.5rem)} h2{font-size:clamp(1.8rem,3vw,3rem)} h3{font-size:1.2rem}
@@ -34,10 +37,7 @@ input,textarea{width:100%;margin-top:.45rem;border-radius:14px;border:1px solid 
   .site-nav.open{display:flex}.menu-toggle{display:block}
 }
 .brand__logo{height: 60px;width: auto; display: block;}
-.hero-img {
-  width: 100%;
-  position: relative;
-}
+.hero-img { width: 100%; position: relative; }
 .image { width: 100%; border-radius: 10px; }
 .video { width: 100%; border-radius: 12px; }
 .overlay {
@@ -53,19 +53,8 @@ input,textarea{width:100%;margin-top:.45rem;border-radius:14px;border:1px solid 
   align-items: flex-end;
   justify-content: center;
 }
-.peru-red {
-  content:"";
-	width:8px;
-	height:12px;
-  background:red;
-	display:inline-block;
-  position: relative;
-}
-.peru-white {
-  content:"";
-	width:8px;
-	height:12px;
-  background:white;
-	display:inline-block;
-  position: relative;
-}
+.peru-red { content:""; width:8px; height:12px; background:red; display:inline-block; position: relative; }
+.peru-white { content:""; width:8px; height:12px; background:white; display:inline-block; position: relative; }
+.flash-message { margin-bottom: 18px; border-left: 4px solid transparent; }
+.flash-success { border-left-color: #22c55e; }
+.flash-error { border-left-color: #ef4444; }
