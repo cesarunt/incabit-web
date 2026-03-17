@@ -4,16 +4,23 @@
     <div class="container">
         <span class="eyebrow">Emergencia</span>
         <h2>Transmitir emergencia en vivo</h2>
-        <p style="text-align: justify;">En esta sección es posible hacer una transmisión en vivo, de un eventual <b><span style="color: #5CCCF5;">delito</span></b>.</p>
+        <p style="text-align: justify;">
+            <b>{{ site.brand }}</b> te permite hacer una tramsmisón en vivo desde tu celular o una transmisión local desde las cámaras de la municipalidad, y al mismo tiempo aplicar analíticas basadas en Machine Learning.
+        </p>
+        <div class="hero-actions">
+            <a href="{{ url_for('emergencia') }}" class="btn">Reportar Emergencia</a>
+        </div>
     </div>
 </section>
 <section class="section">
     <div class="container cards cards-2">
         <article class="card">
-            <h3>Transmisión Ciudadana</h3>
+            <h3>Alerta Ciudadana</h3>
             <ul>
-                <li>Detección de personas</li>
-                <li>Conteo de personas</li>
+                <li>Transmisión <b><span style="color: #5CCCF5;">en vivo</span></b> gratuita, por un periodo de 10 seg.</li>
+                <li>Detección de objetos en tiempo real (personas y vehículos)</li>
+                <li>Merodeo e intrusiones en el hogar</li>
+                <li>Conteo de personas en el hogar</li>
                 <li>Alertas por eventos</li>
             </ul>
             <!-- <div class="hero-img">
@@ -21,11 +28,12 @@
             </div> -->
         </article>
         <article class="card">
-            <h3>Transmisión Municipal</h3>
+            <h3>Alerta Municipal</h3>
             <ul>
-                <li>Conteo de personas</li>
-                <li>Detección de objetos</li>
-                <li>Merodeo e intrusión de ladrones</li>
+                <li>Transmisión <b><span style="color: #666;">local</span></b> con el municipio, hasta por 60 seg.</li>
+                <li>Detección de objetos en tiempo real (personas, vehículos, armas, etc.)</li>
+                <li>Merodeo e intrusión de ladrones en locales municipales</li>
+                <li>Conteo de personas en locales municipales</li>
             </ul>
             <!-- <div class="hero-img">
                 <img class="image" src="../static/img/incabit-solutions-security.png" />
