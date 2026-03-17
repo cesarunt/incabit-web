@@ -27,13 +27,13 @@ def aprendizaje():
 def plataforma():
     return render_template("plataforma.html", page_title="Plataforma")
 
+@app.route("/emergencia")
+def emergencia():
+    return render_template("emergencia.html", page_title="Emergencia")
+
 @app.route("/soluciones")
 def soluciones():
     return render_template("soluciones.html", page_title="Soluciones")
-
-@app.route("/casos-de-uso")
-def casos():
-    return render_template("casos.html", page_title="Casos de uso")
 
 @app.route("/demo")
 def demo():

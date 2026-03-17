@@ -16,6 +16,6 @@ python app.py
 - /
 - /aprendizaje
 - /plataforma
+- /emergencia
 - /soluciones
-- /demo
 - /contacto
