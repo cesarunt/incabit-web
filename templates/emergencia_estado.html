@@ -5,13 +5,26 @@
     <div class="container">
         <span class="eyebrow">Estado del Incidente</span>
         <h2>Reporte registrado correctamente</h2>
-        <p>Tu código de seguimiento es: <b>{{ codigo }}</b></p>
 
-        {% if tipo %}
-            <p>Tipo de reporte: <b>{{ tipo|capitalize }}</b></p>
+        <p>Tu código de seguimiento es: <b>{{ incidente.codigo }}</b></p>
+        <p>Tipo de reporte: <b>{{ incidente.tipo_reporte|capitalize }}</b></p>
+        <p>Estado actual: <b>{{ incidente.estado|capitalize }}</b></p>
+        <p>Ubicación: <b>{{ incidente.latitud }}, {{ incidente.longitud }}</b></p>
+        {% if incidente.direccion_texto %}
+            <p>Dirección referencial: <b>{{ incidente.direccion_texto }}</b></p>
+        {% else %}
+            <p>Dirección referencial: <b>No disponible</b></p>
         {% endif %}
+        
+        <div style="margin-top: 20px;">
+            <img
+                src="{{ url_for('static', filename=incidente.ruta_imagen) }}"
+                alt="Imagen del incidente"
+                style="max-width: 100%; border-radius: 12px; border: 1px solid #333;"
+            >
+        </div>
 
-        <div class="hero-actions">
+        <div class="hero-actions" style="margin-top: 20px;">
             <a href="{{ url_for('emergencia') }}" class="btn">Volver a Emergencia</a>
             <a href="{{ url_for('emergencia_reportar') }}" class="btn">Registrar otro incidente</a>
         </div>

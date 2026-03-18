@@ -7,7 +7,7 @@
         <h2>Registro ciudadano de incidentes</h2>
         <p style="text-align: justify;">
             Completa la información del incidente. La ubicación se obtendrá automáticamente
-            desde el celular y podrás adjuntar una imagen recién tomada o cargada desde tu dispositivo.
+            desde tu celular y podrás adjuntar una imagen.
         </p>
     </div>
 </section>
@@ -26,12 +26,14 @@
         {% endwith %}
 
         <article class="card">
-            <form method="POST" enctype="multipart/form-data" id="form-emergencia">
+            <form method="POST" enctype="multipart/form-data">
+
                 <div style="display: grid; gap: 18px;">
 
+                    <!-- Tipo -->
                     <div>
-                        <label for="tipo_reporte"><b>Tipo de reporte</b></label><br><br>
-                        <select id="tipo_reporte" name="tipo_reporte" style="width: 100%; padding: 12px; border-radius: 10px;">
+                        <label><b>Tipo de reporte</b></label><br><br>
+                        <select name="tipo_reporte" style="width: 100%; padding: 12px; border-radius: 10px;">
                             <option value="">Seleccionar</option>
                             <option value="robo">Robo</option>
                             <option value="merodeo">Merodeo sospechoso</option>
@@ -42,10 +44,10 @@
                         </select>
                     </div>
 
+                    <!-- Descripción -->
                     <div>
-                        <label for="descripcion"><b>Descripción del incidente</b></label><br><br>
+                        <label><b>Descripción del incidente</b></label><br><br>
                         <textarea
-                            id="descripcion"
                             name="descripcion"
                             rows="5"
                             placeholder="Describe brevemente lo ocurrido..."
@@ -53,34 +55,36 @@
                         ></textarea>
                     </div>
 
-                    <div class="cards cards-2">
-                        <div class="card">
-                            <label for="latitud"><b>Latitud</b></label><br><br>
-                            <input
-                                type="text"
-                                id="latitud"
-                                name="latitud"
-                                readonly
-                                placeholder="Obteniendo ubicación..."
-                                style="width: 100%; padding: 12px; border-radius: 10px;"
-                            >
+                    <!-- MAPA -->
+                    <div class="card">
+                        <label><b>Ubicación detectada</b></label>
+
+                        <p style="margin: 10px 0 14px; color: #aaa;">
+                            Se mostrará tu ubicación automáticamente.
+                        </p>
+
+                        <div id="mapa-ubicacion"
+                            style="height: 320px; width: 100%; border-radius: 14px; overflow: hidden; border: 1px solid #1f2937;">
+                        </div>
+                        <div style="margin-top: 11px; font-size: 0.85rem; color: #9ca3af; text-align: center;">
+                            <div>
+                                Latitud: <span id="latitud-texto"> ... </span> 
+                                - Longitud: <span id="longitud-texto"> ... </span>
+                            </div>
                         </div>
 
-                        <div class="card">
-                            <label for="longitud"><b>Longitud</b></label><br><br>
-                            <input
-                                type="text"
-                                id="longitud"
-                                name="longitud"
-                                readonly
-                                placeholder="Obteniendo ubicación..."
-                                style="width: 100%; padding: 12px; border-radius: 10px;"
-                            >
+                        <div style="margin-top: 14px; text-align: center;">
+                            <button type="button" class="btn btn-outline" id="btn-reubicar">Actualizar</button>
                         </div>
+
+                        <input type="hidden" id="latitud" name="latitud">
+                        <input type="hidden" id="longitud" name="longitud">
                     </div>
 
+                    <!-- Imagen -->
                     <div class="card">
-                        <label for="evidencia"><b>Imagen de evidencia</b></label><br><br>
+                        <label><b>Imagen de evidencia</b></label><br><br>
+
                         <input
                             type="file"
                             id="evidencia"
@@ -89,88 +93,121 @@
                             capture="environment"
                             style="width: 100%; padding: 12px; border-radius: 10px;"
                         >
-                        <p style="margin-top: 10px; color: #aaa;">
-                            Puedes tomar una foto con la cámara del celular o seleccionar una imagen existente.
-                        </p>
 
-                        <div id="preview-wrapper" style="display:none; margin-top: 14px;">
-                            <img
-                                id="preview-image"
-                                src=""
-                                alt="Vista previa"
-                                style="max-width: 100%; border-radius: 12px; border: 1px solid #333;"
-                            >
+                        <div id="preview-wrapper" style="display:none; margin-top:15px;">
+                            <img id="preview-image"
+                                 style="max-width:100%; border-radius:12px; border:1px solid #333;">
                         </div>
                     </div>
 
+                    <!-- Botones -->
                     <div class="hero-actions">
                         <button type="submit" class="btn">Enviar Emergencia</button>
                         <a href="{{ url_for('emergencia') }}" class="btn">Volver</a>
                     </div>
+
                 </div>
+
             </form>
         </article>
+
     </div>
 </section>
 
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const latitudInput = document.getElementById("latitud");
-    const longitudInput = document.getElementById("longitud");
-    const evidenciaInput = document.getElementById("evidencia");
+
+    const latInput = document.getElementById("latitud");
+    const lngInput = document.getElementById("longitud");
+
+    const latTxt = document.getElementById("latitud-texto");
+    const lngTxt = document.getElementById("longitud-texto");
+
     const previewWrapper = document.getElementById("preview-wrapper");
     const previewImage = document.getElementById("preview-image");
 
+    const evidencia = document.getElementById("evidencia");
+    const btnReubicar = document.getElementById("btn-reubicar");
+
+    const mapa = L.map("mapa-ubicacion", {
+        zoomControl: false,
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        touchZoom: false
+    }).setView([-12.0464, -77.0428], 16);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(mapa);
+
+    let marker = null;
+
+    function actualizarMapa(lat, lng) {
+        if (marker) {
+            marker.setLatLng([lat, lng]);
+        } else {
+            marker = L.marker([lat, lng]).addTo(mapa);
+        }
+
+        mapa.setView([lat, lng], 17);
+        setTimeout(() => mapa.invalidateSize(), 200);
+    }
+
     function obtenerUbicacion() {
+        latTxt.textContent = " ... ";
+        lngTxt.textContent = " ... ";
+
         if (!navigator.geolocation) {
-            latitudInput.placeholder = "GPS no soportado";
-            longitudInput.placeholder = "GPS no soportado";
+            latTxt.textContent = "No soportado";
+            lngTxt.textContent = "No soportado";
             return;
         }
 
         navigator.geolocation.getCurrentPosition(
-            function (position) {
-                latitudInput.value = position.coords.latitude.toFixed(8);
-                longitudInput.value = position.coords.longitude.toFixed(8);
-            },
-            function (error) {
-                latitudInput.value = "";
-                longitudInput.value = "";
+            function (pos) {
+                const lat = pos.coords.latitude.toFixed(6);
+                const lng = pos.coords.longitude.toFixed(6);
 
-                if (error.code === 1) {
-                    latitudInput.placeholder = "Permiso denegado";
-                    longitudInput.placeholder = "Permiso denegado";
-                } else if (error.code === 2) {
-                    latitudInput.placeholder = "Ubicación no disponible";
-                    longitudInput.placeholder = "Ubicación no disponible";
-                } else {
-                    latitudInput.placeholder = "No se pudo obtener";
-                    longitudInput.placeholder = "No se pudo obtener";
-                }
+                latInput.value = lat;
+                lngInput.value = lng;
+
+                latTxt.textContent = lat;
+                lngTxt.textContent = lng;
+
+                actualizarMapa(parseFloat(lat), parseFloat(lng));
+            },
+            function () {
+                latTxt.textContent = "Error";
+                lngTxt.textContent = "Error";
             },
             {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
+                enableHighAccuracy: true
             }
         );
     }
 
-    evidenciaInput.addEventListener("change", function (event) {
-        const file = event.target.files[0];
+    evidencia.addEventListener("change", function (e) {
+        const file = e.target.files[0];
+
         if (!file) {
             previewWrapper.style.display = "none";
-            previewImage.src = "";
             return;
         }
 
         const reader = new FileReader();
-        reader.onload = function (e) {
-            previewImage.src = e.target.result;
+        reader.onload = function (ev) {
+            previewImage.src = ev.target.result;
             previewWrapper.style.display = "block";
         };
         reader.readAsDataURL(file);
     });
+
+    btnReubicar.addEventListener("click", obtenerUbicacion);
 
     obtenerUbicacion();
 });
