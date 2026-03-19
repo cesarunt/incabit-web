@@ -4,7 +4,7 @@
 <section class="page-hero">
     <div class="container">
         <span class="eyebrow">Reportar Emergencia</span>
-        <h2>Registro ciudadano de incidentes</h2>
+        <h2>Registro de emergencia ciudadana</h2>
         <p style="text-align: justify;">
             Completa la información del incidente. La ubicación se obtendrá automáticamente
             desde tu celular y podrás adjuntar una imagen.
@@ -32,7 +32,7 @@
 
                     <!-- Tipo -->
                     <div>
-                        <label><b>Tipo de reporte</b></label><br><br>
+                        <label><b>Tipo de reporte</b></label><br>
                         <select name="tipo_reporte" style="width: 100%; padding: 12px; border-radius: 10px;">
                             <option value="">Seleccionar</option>
                             <option value="robo">Robo</option>
@@ -46,7 +46,7 @@
 
                     <!-- Descripción -->
                     <div>
-                        <label><b>Descripción del incidente</b></label><br><br>
+                        <label><b>Descripción del incidente</b></label><br>
                         <textarea
                             name="descripcion"
                             rows="5"
@@ -57,11 +57,11 @@
 
                     <!-- MAPA -->
                     <div class="card">
-                        <label><b>Ubicación detectada</b></label>
+                        <label><b>Ubicación</b></label><br>
 
-                        <p style="margin: 10px 0 14px; color: #aaa;">
-                            Se mostrará tu ubicación automáticamente.
-                        </p>
+                        <span style="margin: 10px 0 14px; color: #aaa;">
+                            Detectada automáticamente
+                        </span>
 
                         <div id="mapa-ubicacion"
                             style="height: 320px; width: 100%; border-radius: 14px; overflow: hidden; border: 1px solid #1f2937;">
@@ -74,7 +74,7 @@
                         </div>
 
                         <div style="margin-top: 14px; text-align: center;">
-                            <button type="button" class="btn btn-outline" id="btn-reubicar">Actualizar</button>
+                            <button type="button" class="btn btn-update-gps" id="btn-reubicar">Actualizar</button>
                         </div>
 
                         <input type="hidden" id="latitud" name="latitud">
@@ -83,8 +83,7 @@
 
                     <!-- Imagen -->
                     <div class="card">
-                        <label><b>Imagen de evidencia</b></label><br><br>
-
+                        <label><b>Imagen de evidencia</b></label><br>
                         <input
                             type="file"
                             id="evidencia"
@@ -102,8 +101,8 @@
 
                     <!-- Botones -->
                     <div class="hero-actions">
-                        <button type="submit" class="btn">Enviar Emergencia</button>
-                        <a href="{{ url_for('emergencia') }}" class="btn">Volver</a>
+                        <button type="submit" class="btn" style="font-size: medium;">Registrar</button>
+                        <a href="{{ url_for('emergencia') }}" class="btn btn-cancel">Cancelar</a>
                     </div>
 
                 </div>

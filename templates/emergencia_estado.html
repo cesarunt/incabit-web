@@ -4,18 +4,30 @@
 <section class="page-hero">
     <div class="container">
         <span class="eyebrow">Estado del Incidente</span>
-        <h2>Reporte registrado correctamente</h2>
+        <h2>Emergencia registrada</h2>
 
-        <p>Tu código de seguimiento es: <b>{{ incidente.codigo }}</b></p>
-        <p>Tipo de reporte: <b>{{ incidente.tipo_reporte|capitalize }}</b></p>
-        <p>Estado actual: <b>{{ incidente.estado|capitalize }}</b></p>
-        <p>Ubicación: <b>{{ incidente.latitud }}, {{ incidente.longitud }}</b></p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div style="margin-top: 20px; margin-bottom: 24px;">
+                    {% for category, message in messages %}
+                        <article class="card flash-message {% if category == 'success' %}flash-success{% else %}flash-error{% endif %}">
+                            <p style="margin: 0;"><b>{{ message }}</b></p>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <span>Código de Seguimiento: <b>{{ incidente.codigo }}</b></span><br>
+        <span>Tipo de reporte: <b>{{ incidente.tipo_reporte|capitalize }}</b></span><br>
+        <span>Estado actual: <b>{{ incidente.estado|capitalize }}</b></span><br>
+        <span>Ubicación: <b>{{ incidente.latitud }}, {{ incidente.longitud }}</b></span><br>
         {% if incidente.direccion_texto %}
-            <p>Dirección referencial: <b>{{ incidente.direccion_texto }}</b></p>
+            <span>Dirección referencial: {{ incidente.direccion_texto }}</span>
         {% else %}
-            <p>Dirección referencial: <b>No disponible</b></p>
+            <span>Dirección referencial: No disponible</span>
         {% endif %}
-        
+
         <div style="margin-top: 20px;">
             <img
                 src="{{ url_for('static', filename=incidente.ruta_imagen) }}"

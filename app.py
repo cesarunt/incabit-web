@@ -10,7 +10,7 @@ app.secret_key = os.getenv("SECRET_KEY", "incabit-dev-key")
 
 SITE = {
     "brand": "incaB1T",
-    "tagline": "Detecta objetos, comportamientos, anticipa acciones",
+    "tagline": "Seguridad en Lima con Inteligencia Artificial",
     "email": "cesar@incabit.com",
     "phone": "+51 943002381",
     "whatsapp": "51943002381"
@@ -131,16 +131,16 @@ def emergencia_reportar():
         errores = []
 
         if not tipo_reporte:
-            errores.append("Debes seleccionar el tipo de reporte.")
+            errores.append("Seleccionar el tipo de reporte")
 
         if not descripcion:
-            errores.append("Debes ingresar una descripción del incidente.")
+            errores.append("Ingresar una descripción del incidente")
 
         if not latitud or not longitud:
             errores.append("No se pudo obtener la ubicación. Activa el GPS del celular.")
 
         if not evidencia or not evidencia.filename:
-            errores.append("Debes adjuntar una imagen tomada o cargada desde el celular.")
+            errores.append("Adjuntar imagen o cargar desde el celular")
 
         if evidencia and evidencia.filename and not allowed_file(evidencia.filename):
             errores.append("La imagen debe ser JPG, JPEG, PNG o WEBP.")
