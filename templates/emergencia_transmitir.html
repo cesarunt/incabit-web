@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="page-hero">
+    <div class="container">
+        <span class="eyebrow">Transmitir Emergencia</span>
+        <h2>Transmisión por snapshots periódicos</h2>
+        <p style="text-align: justify;">
+            Activa la cámara antes de iniciar, para detectar imágenes e identificar objetos de interés.
+        </p>
+
+        <!-- Estado inicial -->
+        <div id="bloque-inicial" class="hero-actions" style="margin: 24px auto; display: block !important; text-align: center;">
+            <button type="button" class="btn" id="btn-iniciar-principal">Iniciar Transmisión</button>
+        </div>
+
+        <!-- Mensaje final -->
+        <div id="mensaje-final" style="display: none; margin-top: 24px;">
+            <article class="card flash-message flash-success">
+                <p style="margin: 0;"><b>La transmisión ha finalizado</b></p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="panel-transmision" style="display: none;">
+    <div class="container cards cards-2">
+
+        <article class="card">
+            <h3>Resultado en vivo</h3>
+
+            <img id="resultado-imagen"
+                 style="width: 100%; border-radius: 14px; background: #111; min-height: 320px; object-fit: contain; display: none;"
+                 alt="Resultado YOLO">
+
+            <div id="placeholder-resultado"
+                 style="width: 100%; min-height: 320px; border-radius: 14px; background: #111; display: flex; align-items: center; justify-content: center; color: #777;">
+                Esperando procesamiento...
+            </div>
+
+            <div id="estado-proceso" style="margin-top: 14px; color: #9ca3af;">
+                Preparado para procesar snapshots.
+            </div>
+
+            <div style="margin-top: 12px;">
+                <h4>Resumen</h4>
+                <p>👤 Personas: <b id="conteo-personas">0</b> &nbsp;&nbsp; 🚗 Vehículos: <b id="conteo-vehiculos">0</b></p>
+            </div>
+
+            <div style="margin-top: 18px;" hidden>
+                <h4>Detecciones</h4>
+                <ul id="lista-detecciones" style="line-height: 1.8;"></ul>
+            </div>
+        </article>
+
+        <article class="card">
+            <h3>Cámara en vivo</h3>
+
+            <video id="video" autoplay playsinline muted
+                   style="width: 100%; border-radius: 14px; background: #111; min-height: 320px; object-fit: cover;"></video>
+
+            <canvas id="canvas" style="display:none;"></canvas>
+
+            <div class="hero-actions" style="margin-top: 18px;">
+                <button type="button" class="btn btn-streaming" id="btn-detener">Detener</button>
+            </div>
+
+            <p id="estado-camara" style="margin-top: 14px; color: #9ca3af;">
+                Frecuencia inicial: 1 snapshot cada 1 segundo.
+            </p>
+        </article>
+
+    </div>
+</section>
+
+<style>
+.flash-message {
+    margin-bottom: 18px;
+    border-left: 4px solid transparent;
+    padding-left: 14px;
+}
+
+.flash-success {
+    border-left-color: #22c55e;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const bloqueInicial = document.getElementById("bloque-inicial");
+    const mensajeFinal = document.getElementById("mensaje-final");
+    const panelTransmision = document.getElementById("panel-transmision");
+
+    const btnIniciarPrincipal = document.getElementById("btn-iniciar-principal");
+    const btnDetener = document.getElementById("btn-detener");
+
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const resultadoImagen = document.getElementById("resultado-imagen");
+    const placeholderResultado = document.getElementById("placeholder-resultado");
+    const listaDetecciones = document.getElementById("lista-detecciones");
+    const estadoProceso = document.getElementById("estado-proceso");
+    const estadoCamara = document.getElementById("estado-camara");
+
+    const INTERVALO_MS = 1000;
+    const DURACION_SEGUNDOS = 10;
+
+    const conteoPersonas = document.getElementById("conteo-personas");
+    const conteoVehiculos = document.getElementById("conteo-vehiculos");
+
+    let stream = null;
+    let iniciando = false;
+    let intervalId = null;
+    let countdownId = null;
+    let procesando = false;
+    let transmisionActiva = false;
+    let segundosRestantes = DURACION_SEGUNDOS;
+
+    function mostrarEstadoInicial() {
+        bloqueInicial.style.display = "flex";
+        panelTransmision.style.display = "none";
+    }
+
+    function mostrarPanelTransmision() {
+        bloqueInicial.style.display = "none";
+        mensajeFinal.style.display = "none";
+        panelTransmision.style.display = "block";
+    }
+
+    function limpiarPanel() {
+        resultadoImagen.src = "";
+        resultadoImagen.style.display = "none";
+        placeholderResultado.style.display = "flex";
+        estadoProceso.textContent = "Preparado para procesar snapshots.";
+        estadoCamara.textContent = "Frecuencia inicial: 1 snapshot cada 1 segundo.";
+        video.srcObject = null;
+        conteoPersonas.textContent = 0;
+        conteoVehiculos.textContent = 0;
+
+        if (listaDetecciones) {
+            listaDetecciones.innerHTML = "";
+        }
+    }
+
+    function detenerCamara() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        video.srcObject = null;
+    }
+
+    async function finalizarTransmision(mensaje) {
+        transmisionActiva = false;
+
+        if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+        }
+
+        if (countdownId) {
+            clearInterval(countdownId);
+            countdownId = null;
+        }
+
+        detenerCamara();
+        limpiarPanel();
+
+        try {
+            await fetch("/api/emergencia/finalizar-transmision", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+        } catch (error) {
+            console.error("Error liberando transmisión:", error);
+        }
+
+        panelTransmision.style.display = "none";
+        bloqueInicial.style.display = "flex";
+        mensajeFinal.style.display = "block";
+
+        const p = mensajeFinal.querySelector("p b");
+        if (p) {
+            p.textContent = mensaje || "La transmisión ha finalizado";
+        }
+
+        iniciando = false;
+        btnIniciarPrincipal.disabled = false;
+        btnIniciarPrincipal.style.opacity = "1";
+    }
+
+    async function iniciarCamara() {
+        try {
+            if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                estadoProceso.textContent = "La cámara requiere HTTPS o localhost.";
+                return false;
+            }
+
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment" },
+                audio: false
+            });
+
+            video.srcObject = stream;
+            estadoCamara.textContent = "Cámara activada correctamente.";
+            return true;
+
+        } catch (error) {
+            console.error("Error al acceder a la cámara:", error);
+
+            if (error.name === "NotAllowedError") {
+                estadoProceso.textContent = "Permiso de cámara denegado por el usuario o bloqueado por el navegador.";
+            } else if (error.name === "NotFoundError") {
+                estadoProceso.textContent = "No se encontró una cámara disponible en el dispositivo.";
+            } else if (error.name === "NotReadableError") {
+                estadoProceso.textContent = "La cámara está siendo usada por otra aplicación.";
+            } else {
+                estadoProceso.textContent = "No se pudo acceder a la cámara.";
+            }
+
+            return false;
+        }
+    }
+
+    function capturarFrame() {
+        if (!video.videoWidth || !video.videoHeight || procesando || !transmisionActiva) {
+            return;
+        }
+
+        procesando = true;
+        estadoProceso.textContent = `Procesando snapshot... Tiempo restante: ${segundosRestantes}s`;
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const frameData = canvas.toDataURL("image/jpeg", 0.85);
+
+        fetch("/api/emergencia/procesar-frame", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ frame: frameData })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.ok) {
+                estadoProceso.textContent = data.error || "Error al procesar el frame.";
+                procesando = false;
+                return;
+            }
+
+            placeholderResultado.style.display = "none";
+            resultadoImagen.src = data.imagen_procesada;
+            resultadoImagen.style.display = "block";
+
+            let personas = 0;
+            let vehiculos = 0;
+
+            if (data.conteo) {
+                personas = data.conteo["person"] || 0;
+                vehiculos =
+                    (data.conteo["car"] || 0) +
+                    (data.conteo["motorcycle"] || 0) +
+                    (data.conteo["bus"] || 0) +
+                    (data.conteo["truck"] || 0);
+            }
+
+            conteoPersonas.textContent = personas;
+            conteoVehiculos.textContent = vehiculos;
+
+            if (listaDetecciones) {
+                listaDetecciones.innerHTML = "";
+
+                if (data.detecciones && data.detecciones.length > 0) {
+                    data.detecciones.forEach(item => {
+                        const li = document.createElement("li");
+                        li.textContent = `${item.clase} - confianza: ${item.confianza}`;
+                        listaDetecciones.appendChild(li);
+                    });
+                } else {
+                    const li = document.createElement("li");
+                    li.textContent = "No se detectaron objetos relevantes.";
+                    listaDetecciones.appendChild(li);
+                }
+            }
+
+            estadoProceso.textContent = `Frame procesado correctamente. Tiempo restante: ${segundosRestantes}s`;
+            procesando = false;
+        })
+        .catch(error => {
+            console.error(error);
+            estadoProceso.textContent = "Error de comunicación con el servidor.";
+            procesando = false;
+        });
+    }
+
+    function iniciarContador() {
+        segundosRestantes = DURACION_SEGUNDOS;
+        estadoProceso.textContent = `Transmisión iniciada. Tiempo restante: ${segundosRestantes}s`;
+
+        countdownId = setInterval(() => {
+            segundosRestantes--;
+
+            if (segundosRestantes <= 0) {
+                finalizarTransmision("La transmisión ha finalizado");
+                return;
+            }
+
+            estadoProceso.textContent = `Transmisión en curso. Tiempo restante: ${segundosRestantes}s`;
+        }, 1000);
+    }
+
+    btnIniciarPrincipal.addEventListener("click", async function () {
+        if (transmisionActiva || iniciando) return;
+
+        iniciando = true;
+        btnIniciarPrincipal.disabled = true;
+        btnIniciarPrincipal.style.opacity = "0.6";
+        mensajeFinal.style.display = "none";
+
+        try {
+            const res = await fetch("/api/emergencia/iniciar-transmision", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const rawText = await res.text();
+            console.log("STATUS:", res.status);
+            console.log("RAW RESPONSE:", rawText);
+
+            let data = null;
+            try {
+                data = JSON.parse(rawText);
+            } catch (jsonError) {
+                throw new Error("La respuesta del servidor no es JSON válido: " + rawText);
+            }
+
+            if (!res.ok || !data.ok) {
+                mostrarEstadoInicial();
+                mensajeFinal.style.display = "block";
+
+                const p = mensajeFinal.querySelector("p b");
+                if (p) {
+                    p.textContent = data.error || "No se pudo iniciar la transmisión.";
+                }
+
+                iniciando = false;
+                btnIniciarPrincipal.disabled = false;
+                btnIniciarPrincipal.style.opacity = "1";
+                return;
+            }
+
+            const ok = await iniciarCamara();
+            if (!ok) {
+                await fetch("/api/emergencia/finalizar-transmision", {
+                    method: "POST"
+                });
+
+                mostrarEstadoInicial();
+                iniciando = false;
+                btnIniciarPrincipal.disabled = false;
+                btnIniciarPrincipal.style.opacity = "1";
+                return;
+            }
+
+            mostrarPanelTransmision();
+
+            transmisionActiva = true;
+            if (listaDetecciones) {
+                listaDetecciones.innerHTML = "";
+            }
+            placeholderResultado.style.display = "flex";
+            resultadoImagen.style.display = "none";
+
+            capturarFrame();
+            intervalId = setInterval(capturarFrame, INTERVALO_MS);
+            iniciarContador();
+
+        } catch (error) {
+            console.error("ERROR REAL iniciar transmisión:", error);
+
+            mostrarEstadoInicial();
+            mensajeFinal.style.display = "block";
+
+            const p = mensajeFinal.querySelector("p b");
+            if (p) {
+                p.textContent = error.message || "Error al verificar disponibilidad de transmisión.";
+            }
+
+            iniciando = false;
+            btnIniciarPrincipal.disabled = false;
+            btnIniciarPrincipal.style.opacity = "1";
+        }
+    });
+
+    btnDetener.addEventListener("click", function () {
+        if (!transmisionActiva && !stream) {
+            return;
+        }
+        finalizarTransmision("La transmisión ha finalizado");
+    });
+
+    mostrarEstadoInicial();
+});
+</script>
+
+{% endblock %}

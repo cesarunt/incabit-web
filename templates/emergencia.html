@@ -10,7 +10,7 @@
         </p>
         <div class="hero-actions">
             <a href="{{ url_for('emergencia_reportar') }}" class="btn">Reportar Emergencia</a>
-            <a href="#" class="btn btn-streaming">Transmitir Emergencia</a>
+            <a href="{{ url_for('emergencia_transmitir') }}" class="btn btn-streaming">Transmitir Emergencia</a>
         </div>
     </div>
 </section>
@@ -26,9 +26,6 @@
                 <li>Conteo de personas en el hogar.</li>
                 <li>Alertas por eventos.</li>
             </ul>
-            <div class="hero-actions" style="margin-top: 18px;">
-                <a href="{{ url_for('emergencia_reportar') }}" class="btn">Iniciar Alerta Ciudadana</a>
-            </div>
         </article>
 
         <article class="card">
@@ -39,9 +36,6 @@
                 <li>Merodeo e intrusión de ladrones en locales municipales.</li>
                 <li>Conteo de personas en locales municipales.</li>
             </ul>
-            <div class="hero-actions" style="margin-top: 18px;">
-                <a href="{{ url_for('contacto') }}" class="btn">Solicitar Integración</a>
-            </div>
         </article>
     </div>
 </section>
