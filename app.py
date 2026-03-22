@@ -37,7 +37,7 @@ SITE = {
 # =========================================================
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:DBadmin28$@localhost:5232/incabit_db"
+    "postgresql://postgres:DBadmin28$@localhost:5432/incabit_db"
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
