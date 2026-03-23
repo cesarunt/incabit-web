@@ -44,7 +44,7 @@
 
             <div style="margin-top: 12px;">
                 <h4>Resumen</h4>
-                <p>👤 Personas: <b id="conteo-personas">0</b> &nbsp;&nbsp; 🚗 Vehículos: <b id="conteo-vehiculos">0</b></p>
+                <p>👤 Personas: <b id="conteo-personas">0</b> &nbsp; 🚗 Vehículos: <b id="conteo-vehiculos">0</b> &nbsp; 🐶 Perros: <b id="conteo-perros">0</b></p>
             </div>
 
             <div style="margin-top: 18px;" hidden>
@@ -107,6 +107,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const conteoPersonas = document.getElementById("conteo-personas");
     const conteoVehiculos = document.getElementById("conteo-vehiculos");
+    const conteoPerros = document.getElementById("conteo-perros");
 
     let stream = null;
     let iniciando = false;
@@ -136,6 +137,7 @@ document.addEventListener("DOMContentLoaded", function () {
         video.srcObject = null;
         conteoPersonas.textContent = 0;
         conteoVehiculos.textContent = 0;
+        conteoPerros.textContent = 0;
 
         if (listaDetecciones) {
             listaDetecciones.innerHTML = "";
@@ -261,6 +263,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             let personas = 0;
             let vehiculos = 0;
+            let perros = 0;
 
             if (data.conteo) {
                 personas = data.conteo["person"] || 0;
@@ -269,10 +272,12 @@ document.addEventListener("DOMContentLoaded", function () {
                     (data.conteo["motorcycle"] || 0) +
                     (data.conteo["bus"] || 0) +
                     (data.conteo["truck"] || 0);
+                perros = data.conteo["dog"] || 0;
             }
 
             conteoPersonas.textContent = personas;
             conteoVehiculos.textContent = vehiculos;
+            conteoPerros.textContent = perros;
 
             if (listaDetecciones) {
                 listaDetecciones.innerHTML = "";
