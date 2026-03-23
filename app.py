@@ -27,8 +27,7 @@ SITE = {
     "brand": "incaB1T",
     "tagline": "Seguridad en Lima con Inteligencia Artificial",
     "email": "cesar@incabit.com",
-    "phone": "+51 943002381",
-    "whatsapp": "51943002381"
+    "phone": "+51 943002381"
 }
 
 
@@ -76,7 +75,7 @@ YOLO_CONFIDENCE = 0.5
 
 # Clases COCO seleccionadas:
 # 0 person, 2 car, 3 motorcycle, 5 bus, 7 truck
-YOLO_CLASSES = [0, 2, 3, 5, 7]
+YOLO_CLASSES = [0, 2, 3, 5, 7, 16]
 
 yolo_model = None
 
