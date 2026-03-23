@@ -237,6 +237,7 @@ def procesar_frame_yolo_desde_base64(data_url: str):
             source=frame,
             conf=YOLO_CONFIDENCE,
             classes=YOLO_CLASSES,
+            imgsz=640,
             verbose=False
         )
 

@@ -234,13 +234,16 @@ document.addEventListener("DOMContentLoaded", function () {
         procesando = true;
         estadoProceso.textContent = `Procesando snapshot... Tiempo restante: ${segundosRestantes}s`;
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        const maxWidth = 640;
+        const scale = maxWidth / video.videoWidth;
+
+        canvas.width = maxWidth;
+        canvas.height = Math.round(video.videoHeight * scale);
 
         const ctx = canvas.getContext("2d");
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const frameData = canvas.toDataURL("image/jpeg", 0.85);
+        const frameData = canvas.toDataURL("image/jpeg", 0.75);
 
         fetch("/api/emergencia/procesar-frame", {
             method: "POST",
