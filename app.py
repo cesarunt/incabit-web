@@ -3,7 +3,7 @@ import cv2
 import base64
 import requests
 import numpy as np
-
+from urllib.parse import quote_plus
 from datetime import datetime, timedelta
 from ultralytics import YOLO
 from werkzeug.utils import secure_filename
@@ -35,12 +35,24 @@ SITE = {
 # =========================================================
 # CONFIGURACIÓN POSTGRESQL
 # =========================================================
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:DBadmin28$@localhost:5432/incabit_db"
-)
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+database_url = os.getenv("DATABASE_URL")
 
+if database_url:
+    # Producción (Render)
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+else:
+    # Local
+    db_host = os.getenv("DB_HOST", "localhost")
+    db_port = os.getenv("DB_PORT", "5432")
+    db_name = os.getenv("DB_NAME", "incabit_db")
+    db_user = os.getenv("DB_USER", "postgres")
+    db_password = quote_plus(os.getenv("DB_PASSWORD", "DBadmin28$"))
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+    )
+
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 
