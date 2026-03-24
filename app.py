@@ -79,6 +79,11 @@ YOLO_CLASSES = [0, 2, 3, 5, 7, 16]
 
 yolo_model = None
 
+# =========================================================
+# CONFIGURACIÓN TRANSMISIÓN
+# =========================================================
+TRANSMISSION_DURATION_SECONDS = 30
+TRANSMISSION_GRACE_SECONDS = 5
 
 # =========================================================
 # MODELOS
@@ -189,10 +194,14 @@ def liberar_transmision_si_expirada():
     control = obtener_o_crear_control_transmision()
     ahora = datetime.utcnow()
 
-    # si ya pasó la expiración, o si por seguridad lleva más de 15 segundos activa
     if control.estado == "activa":
         expiro_por_fecha = control.expira_en and ahora >= control.expira_en
-        expiro_por_tiempo = control.iniciada_en and (ahora - control.iniciada_en).total_seconds() > 15
+
+        expiro_por_tiempo = (
+            control.iniciada_en and
+            (ahora - control.iniciada_en).total_seconds() >
+            (TRANSMISSION_DURATION_SECONDS + TRANSMISSION_GRACE_SECONDS)
+        )
 
         if expiro_por_fecha or expiro_por_tiempo:
             control.estado = "libre"
@@ -406,10 +415,7 @@ def emergencia_transmitir():
 @app.route("/api/emergencia/iniciar-transmision", methods=["POST"])
 def api_iniciar_transmision():
     try:
-        # print(">>> Entró a iniciar transmisión")
         control = liberar_transmision_si_expirada()
-        # print(">>> Estado actual:", control.estado)
-
         ahora = datetime.utcnow()
 
         if control.estado == "activa":
@@ -420,24 +426,22 @@ def api_iniciar_transmision():
 
         control.estado = "activa"
         control.iniciada_en = ahora
-        control.expira_en = ahora + timedelta(seconds=10)
+        control.expira_en = ahora + timedelta(seconds=TRANSMISSION_DURATION_SECONDS)
         control.ip_usuario = obtener_ip_cliente()
         control.hora_exacta_inicio = ahora
         control.hora_exacta_fin = None
         control.motivo_cierre = None
 
         db.session.commit()
-        # print(">>> Transmisión iniciada correctamente")
 
         return jsonify({
             "ok": True,
             "mensaje": "Transmisión autorizada",
-            "duracion_segundos": 10
+            "duracion_segundos": TRANSMISSION_DURATION_SECONDS
         })
 
     except Exception as e:
         db.session.rollback()
-        # print(">>> ERROR REAL EN api_iniciar_transmision:", repr(e))
         return jsonify({
             "ok": False,
             "error": str(e)

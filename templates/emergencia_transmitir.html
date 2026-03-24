@@ -100,12 +100,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const estadoProceso = document.getElementById("estado-proceso");
     const estadoCamara = document.getElementById("estado-camara");
 
-    const INTERVALO_MS = 1000;
-    const DURACION_SEGUNDOS = 30;
-
     const conteoPersonas = document.getElementById("conteo-personas");
     const conteoVehiculos = document.getElementById("conteo-vehiculos");
     const conteoPerros = document.getElementById("conteo-perros");
+
+    const INTERVALO_MS = 1000;
+    let DURACION_SEGUNDOS = 30;
 
     let stream = null;
     let iniciando = false;
@@ -362,6 +362,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 btnIniciarPrincipal.disabled = false;
                 btnIniciarPrincipal.style.opacity = "1";
                 return;
+            }
+
+            if (data.duracion_segundos) {
+                DURACION_SEGUNDOS = data.duracion_segundos;
             }
 
             const ok = await iniciarCamara();
