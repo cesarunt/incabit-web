@@ -5,9 +5,9 @@
     <div class="container">
         <span class="eyebrow">Transmitir Emergencia</span>
         <h2>Transmisión en vivo</h2>
-        <p style="text-align: justify;">
+        <!-- <p style="text-align: justify;">
             Activa la cámara antes de iniciar, para detectar imágenes e identificar objetos de interés.
-        </p>
+        </p> -->
 
         <!-- Estado inicial -->
         <div id="bloque-inicial" class="hero-actions" style="margin: 24px auto; display: block !important; text-align: center;">
@@ -24,13 +24,19 @@
 </section>
 
 <section class="section" id="panel-transmision" style="display: none;">
-    <div class="container cards cards-2">
+    <div class="container cards cards">
 
         <article class="card">
-            <h3>Resultado en vivo</h3>
+            <h3>Cámara y Resultados en vivo</h3>
 
+            <video id="video" autoplay playsinline muted
+                   style="width: 100%; border-radius: 14px; background: #111; max-width: 320px; object-fit: cover; display: block !important; margin-left: auto; margin-right: auto;"></video>
+
+            <canvas id="canvas" style="display:none;"></canvas> <br>
+
+            <!-- Resultado en vivo -->
             <img id="resultado-imagen"
-                 style="width: 100%; border-radius: 14px; background: #111; min-height: 320px; object-fit: contain; display: none;"
+                 style="width: 100%; border-radius: 14px; background: #111; max-height: 640px; object-fit: contain; display: none;"
                  alt="Resultado YOLO">
 
             <div id="placeholder-resultado"
@@ -39,33 +45,25 @@
             </div>
 
             <div id="estado-proceso" style="margin-top: 14px; color: #9ca3af;">
-                Preparado para procesar snapshots.
+                Preparado para procesar ...
             </div>
 
-            <div style="margin-top: 12px;">
+            <div style="margin-top: 12px; text-align: center;">
                 <h4>Resumen</h4>
-                <p>👤 Personas: <b id="conteo-personas">0</b> &nbsp; 🚗 Vehículos: <b id="conteo-vehiculos">0</b> &nbsp; 🐶 Perros: <b id="conteo-perros">0</b></p>
+                <p>👤 = <b id="conteo-personas">0</b> &nbsp;&nbsp; 🚗 = <b id="conteo-vehiculos">0</b> &nbsp;&nbsp; 🐶 = <b id="conteo-perros">0</b></p>
             </div>
 
             <div style="margin-top: 18px;" hidden>
                 <h4>Detecciones</h4>
                 <ul id="lista-detecciones" style="line-height: 1.8;"></ul>
             </div>
-        </article>
 
-        <article class="card">
-            <h3>Cámara en vivo</h3>
-
-            <video id="video" autoplay playsinline muted
-                   style="width: 100%; border-radius: 14px; background: #111; min-height: 320px; object-fit: cover;"></video>
-
-            <canvas id="canvas" style="display:none;"></canvas>
-
-            <div class="hero-actions" style="margin-top: 18px;">
+            <!-- Boton Detener -->
+            <div class="hero-actions" style="margin-top: 18px; display: flex; margin-left: auto; margin-right: auto;">
                 <button type="button" class="btn btn-streaming" id="btn-detener">Detener</button>
             </div>
 
-            <p id="estado-camara" style="margin-top: 14px; color: #9ca3af;">
+            <p id="estado-camara" style="margin-top: 14px; color: #9ca3af;" hidden>
                 Frecuencia inicial: 1 snapshot cada 1 segundo.
             </p>
         </article>
@@ -102,8 +100,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const estadoProceso = document.getElementById("estado-proceso");
     const estadoCamara = document.getElementById("estado-camara");
 
-    const INTERVALO_MS = 2000;
-    const DURACION_SEGUNDOS = 20;
+    const INTERVALO_MS = 1000;
+    const DURACION_SEGUNDOS = 30;
 
     const conteoPersonas = document.getElementById("conteo-personas");
     const conteoVehiculos = document.getElementById("conteo-vehiculos");
@@ -132,8 +130,8 @@ document.addEventListener("DOMContentLoaded", function () {
         resultadoImagen.src = "";
         resultadoImagen.style.display = "none";
         placeholderResultado.style.display = "flex";
-        estadoProceso.textContent = "Preparado para procesar snapshots.";
-        estadoCamara.textContent = "Frecuencia inicial: 1 snapshot cada 1 segundo.";
+        estadoProceso.textContent = "Preparado para procesar ...";
+        estadoCamara.textContent = "Procesando 1 snapshot cada 1 segundo";
         video.srcObject = null;
         conteoPersonas.textContent = 0;
         conteoVehiculos.textContent = 0;
@@ -213,9 +211,9 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error("Error al acceder a la cámara:", error);
 
             if (error.name === "NotAllowedError") {
-                estadoProceso.textContent = "Permiso de cámara denegado por el usuario o bloqueado por el navegador.";
+                estadoProceso.textContent = "Permiso de cámara denegado o bloqueado por el navegador.";
             } else if (error.name === "NotFoundError") {
-                estadoProceso.textContent = "No se encontró una cámara disponible en el dispositivo.";
+                estadoProceso.textContent = "No se encontró cámara disponible en el dispositivo.";
             } else if (error.name === "NotReadableError") {
                 estadoProceso.textContent = "La cámara está siendo usada por otra aplicación.";
             } else {
@@ -232,7 +230,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         procesando = true;
-        estadoProceso.textContent = `Procesando snapshot... Tiempo restante: ${segundosRestantes}s`;
+        estadoProceso.textContent = `Procesando ... Tiempo restante: ${segundosRestantes}s`;
 
         const maxWidth = 640;
         const scale = maxWidth / video.videoWidth;
@@ -298,7 +296,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
 
-            estadoProceso.textContent = `Frame procesado correctamente. Tiempo restante: ${segundosRestantes}s`;
+            estadoProceso.textContent = `Frame procesado. Tiempo restante: ${segundosRestantes}s`;
             procesando = false;
         })
         .catch(error => {
