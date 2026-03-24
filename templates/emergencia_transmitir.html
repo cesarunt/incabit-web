@@ -20,6 +20,32 @@
                 <p style="margin: 0;"><b>La transmisión ha finalizado</b></p>
             </article>
         </div>
+
+        <div id="resultado-final" style="display:none; margin-top: 24px;">
+            <article class="card">
+                <h4>Resumen de la transmisión</h4>
+                <div id="final-resumen-items" style="margin-top: 16px; font-size: 1.05rem; line-height: 1.9;">
+                    <div id="fila-final-personas">👤 Personas: <b id="final-personas">0</b></div>
+                    <div id="fila-final-vehiculos">🚗 Vehículos: <b id="final-vehiculos">0</b></div>
+                    <div id="fila-final-perros">🐶 Perros: <b id="final-perros">0</b></div>
+                </div>
+
+                <div style="margin-top: 22px;">
+                    <img
+                        id="final-imagen"
+                        src=""
+                        alt="Mejor imagen detectada"
+                        style="max-width: 100%; border-radius: 14px; border: 1px solid #333; display:none; margin: 0 auto;"
+                    >
+                </div>
+
+                <div style="margin-top: 18px; text-align: center;">
+                    <a id="btn-descargar-imagen" class="btn" download="mejor_deteccion.jpg" style="display:none;">
+                        Descargar
+                    </a>
+                </div>
+            </article>
+        </div>
     </div>
 </section>
 
@@ -30,7 +56,8 @@
             <h3>Cámara y Resultados en vivo</h3>
 
             <video id="video" autoplay playsinline muted
-                   style="width: 100%; border-radius: 14px; background: #111; max-width: 320px; object-fit: cover; display: block !important; margin-left: auto; margin-right: auto;"></video>
+                   style="width: 100%; border-radius: 14px; background: #111; max-width: 120px; object-fit: cover; display: block; margin-left: auto; margin-right: auto;" hidden>
+            </video>
 
             <canvas id="canvas" style="display:none;"></canvas> <br>
 
@@ -49,7 +76,7 @@
             </div>
 
             <div style="margin-top: 12px; text-align: center;">
-                <h4>Resumen</h4>
+                <!-- <h4>Resumen</h4> -->
                 <p>👤 = <b id="conteo-personas">0</b> &nbsp;&nbsp; 🚗 = <b id="conteo-vehiculos">0</b> &nbsp;&nbsp; 🐶 = <b id="conteo-perros">0</b></p>
             </div>
 
@@ -59,7 +86,7 @@
             </div>
 
             <!-- Boton Detener -->
-            <div class="hero-actions" style="margin-top: 18px; display: flex; margin-left: auto; margin-right: auto;">
+            <div class="hero-actions" style="margin-top: 28px auto 15px; display: block; text-align: center;">
                 <button type="button" class="btn btn-streaming" id="btn-detener">Detener</button>
             </div>
 
@@ -103,6 +130,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const conteoPersonas = document.getElementById("conteo-personas");
     const conteoVehiculos = document.getElementById("conteo-vehiculos");
     const conteoPerros = document.getElementById("conteo-perros");
+    const filaFinalPersonas = document.getElementById("fila-final-personas");
+    const filaFinalVehiculos = document.getElementById("fila-final-vehiculos");
+    const filaFinalPerros = document.getElementById("fila-final-perros");
+
+    const resultadoFinal = document.getElementById("resultado-final");
+    const finalPersonas = document.getElementById("final-personas");
+    const finalVehiculos = document.getElementById("final-vehiculos");
+    const finalPerros = document.getElementById("final-perros");
+    const finalImagen = document.getElementById("final-imagen");
+    const btnDescargarImagen = document.getElementById("btn-descargar-imagen");
 
     const INTERVALO_MS = 1000;
     let DURACION_SEGUNDOS = 30;
@@ -114,6 +151,20 @@ document.addEventListener("DOMContentLoaded", function () {
     let procesando = false;
     let transmisionActiva = false;
     let segundosRestantes = DURACION_SEGUNDOS;
+
+    let mejorFrameProcesado = null;
+    let mejorConteo = {
+        person: 0,
+        vehiculos: 0,
+        dog: 0,
+        total: 0
+    };
+
+    let ultimoResumen = {
+        person: 0,
+        vehiculos: 0,
+        dog: 0
+    };
 
     function mostrarEstadoInicial() {
         bloqueInicial.style.display = "flex";
@@ -130,12 +181,15 @@ document.addEventListener("DOMContentLoaded", function () {
         resultadoImagen.src = "";
         resultadoImagen.style.display = "none";
         placeholderResultado.style.display = "flex";
-        estadoProceso.textContent = "Preparado para procesar ...";
-        estadoCamara.textContent = "Procesando 1 snapshot cada 1 segundo";
+        estadoProceso.textContent = "Preparado para procesar snapshots.";
+        estadoCamara.textContent = "Frecuencia inicial: 1 snapshot cada 1 segundo.";
         video.srcObject = null;
+
         conteoPersonas.textContent = 0;
         conteoVehiculos.textContent = 0;
-        conteoPerros.textContent = 0;
+
+        const perros = document.getElementById("conteo-perros");
+        if (perros) perros.textContent = 0;
 
         if (listaDetecciones) {
             listaDetecciones.innerHTML = "";
@@ -164,7 +218,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         detenerCamara();
-        limpiarPanel();
 
         try {
             await fetch("/api/emergencia/finalizar-transmision", {
@@ -180,11 +233,45 @@ document.addEventListener("DOMContentLoaded", function () {
         panelTransmision.style.display = "none";
         bloqueInicial.style.display = "flex";
         mensajeFinal.style.display = "block";
+        resultadoFinal.style.display = "block";
 
         const p = mensajeFinal.querySelector("p b");
         if (p) {
             p.textContent = mensaje || "La transmisión ha finalizado";
         }
+        setTimeout(() => {
+            mensajeFinal.style.display = "none";
+        }, 10000);
+
+        const personasFinal = mejorConteo.person || ultimoResumen.person || 0;
+        const vehiculosFinal = mejorConteo.vehiculos || ultimoResumen.vehiculos || 0;
+        const perrosFinal = mejorConteo.dog || ultimoResumen.dog || 0;
+
+        finalPersonas.textContent = personasFinal;
+        finalVehiculos.textContent = vehiculosFinal;
+        finalPerros.textContent = perrosFinal;
+
+        filaFinalPersonas.style.display = personasFinal > 0 ? "block" : "none";
+        filaFinalVehiculos.style.display = vehiculosFinal > 0 ? "block" : "none";
+        filaFinalPerros.style.display = perrosFinal > 0 ? "block" : "none";
+
+        if (personasFinal === 0 && vehiculosFinal === 0 && perrosFinal === 0) {
+            filaFinalPersonas.style.display = "block";
+            filaFinalPersonas.innerHTML = "Sin objetos detectados";
+        }
+
+        if (mejorFrameProcesado) {
+            finalImagen.src = mejorFrameProcesado;
+            finalImagen.style.display = "block";
+
+            btnDescargarImagen.href = mejorFrameProcesado;
+            btnDescargarImagen.style.display = "inline-flex";
+        } else {
+            finalImagen.style.display = "none";
+            btnDescargarImagen.style.display = "none";
+        }
+
+        limpiarPanel();
 
         iniciando = false;
         btnIniciarPrincipal.disabled = false;
@@ -268,17 +355,38 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (data.conteo) {
                 personas = data.conteo["person"] || 0;
+
                 vehiculos =
                     (data.conteo["car"] || 0) +
                     (data.conteo["motorcycle"] || 0) +
                     (data.conteo["bus"] || 0) +
                     (data.conteo["truck"] || 0);
+
                 perros = data.conteo["dog"] || 0;
             }
 
             conteoPersonas.textContent = personas;
             conteoVehiculos.textContent = vehiculos;
-            conteoPerros.textContent = perros;
+            if (document.getElementById("conteo-perros")) {
+                document.getElementById("conteo-perros").textContent = perros;
+            }
+
+            ultimoResumen.person = personas;
+            ultimoResumen.vehiculos = vehiculos;
+            ultimoResumen.dog = perros;
+
+            const totalObjetos = personas + vehiculos + perros;
+
+            if (totalObjetos > mejorConteo.total) {
+                mejorConteo = {
+                    person: personas,
+                    vehiculos: vehiculos,
+                    dog: perros,
+                    total: totalObjetos
+                };
+
+                mejorFrameProcesado = data.imagen_procesada;
+            }
 
             if (listaDetecciones) {
                 listaDetecciones.innerHTML = "";
@@ -329,6 +437,25 @@ document.addEventListener("DOMContentLoaded", function () {
         btnIniciarPrincipal.disabled = true;
         btnIniciarPrincipal.style.opacity = "0.6";
         mensajeFinal.style.display = "none";
+
+        mejorFrameProcesado = null;
+        mejorConteo = {
+            person: 0,
+            vehiculos: 0,
+            dog: 0,
+            total: 0
+        };
+
+        ultimoResumen = {
+            person: 0,
+            vehiculos: 0,
+            dog: 0
+        };
+
+        resultadoFinal.style.display = "none";
+        finalImagen.src = "";
+        finalImagen.style.display = "none";
+        btnDescargarImagen.style.display = "none";
 
         try {
             const res = await fetch("/api/emergencia/iniciar-transmision", {
