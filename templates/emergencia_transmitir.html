@@ -23,11 +23,11 @@
 
         <div id="resultado-final" style="display:none; margin-top: 24px;">
             <article class="card">
-                <h4>Resumen de la transmisión</h4>
+                <h4>Resumen - Elementos detectados</h4>
                 <div id="final-resumen-items" style="margin-top: 16px; font-size: 1.05rem; line-height: 1.9;">
-                    <div id="fila-final-personas">👤 Personas: <b id="final-personas">0</b></div>
-                    <div id="fila-final-vehiculos">🚗 Vehículos: <b id="final-vehiculos">0</b></div>
-                    <div id="fila-final-perros">🐶 Perros: <b id="final-perros">0</b></div>
+                    <div id="fila-final-personas">Personas: <b id="final-personas">0</b></div>
+                    <div id="fila-final-vehiculos">Vehículos: <b id="final-vehiculos">0</b></div>
+                    <div id="fila-final-perros">Perros: <b id="final-perros">0</b></div>
                 </div>
 
                 <div style="margin-top: 22px;">
@@ -41,7 +41,7 @@
 
                 <div style="margin-top: 18px; text-align: center;">
                     <a id="btn-descargar-imagen" class="btn" download="mejor_deteccion.jpg" style="display:none;">
-                        Descargar
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
                     </a>
                 </div>
             </article>
@@ -265,6 +265,7 @@ document.addEventListener("DOMContentLoaded", function () {
             finalImagen.style.display = "block";
 
             btnDescargarImagen.href = mejorFrameProcesado;
+            btnDescargarImagen.download = generarNombreImagen();
             btnDescargarImagen.style.display = "inline-flex";
         } else {
             finalImagen.style.display = "none";
@@ -428,6 +429,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
             estadoProceso.textContent = `Transmisión en curso. Tiempo restante: ${segundosRestantes}s`;
         }, 1000);
+    }
+
+    function generarNombreImagen() {
+        const ahora = new Date();
+
+        const yyyy = ahora.getFullYear();
+        const mm = String(ahora.getMonth() + 1).padStart(2, '0');
+        const dd = String(ahora.getDate()).padStart(2, '0');
+
+        const hh = String(ahora.getHours()).padStart(2, '0');
+        const min = String(ahora.getMinutes()).padStart(2, '0');
+        const ss = String(ahora.getSeconds()).padStart(2, '0');
+
+        return `img_detected_${yyyy}${mm}${dd}_${hh}${min}${ss}.jpg`;
     }
 
     btnIniciarPrincipal.addEventListener("click", async function () {
