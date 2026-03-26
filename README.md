@@ -12,55 +12,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 python app.py
 
-## Rutas
-- /
-- /aprendizaje
-- /plataforma
-- /emergencia
-- /soluciones
-- /contacto
-
-# Arquitectura inicial recomendada
-
-## Ciudadano
-Celular del ciudadano → navegador móvil → incabit.com/emergencia
-Desde ahí:
-- cámara
-- micrófono
-- GPS
-- foto/video/transmisión
-
-## Backend
-Flask
-- autenticación opcional
-- API de incidentes
-- carga de archivos
-- registro de ubicación
-- almacenamiento
-
-## Almacenamiento
-- evidencia multimedia en disco o cloud
-- metadatos en PostgreSQL
-
-## Panel de monitoreo
-- operadores
-- visualización de incidentes
-- reproducción de videos
-- revisión de imágenes
-
-
-# Recomendación estratégica
-Solución híbrida desde el inicio conceptual:
-
-## Ciudadano
-- usa celular
-- transmite o reporta
-
-## Municipio
-- recibe
-- visualiza
-- gestiona
-
-## IA
-- entra como capa posterior
-- no como requisito inicial
+## Ramas (git branch)
+- main:     web inicial, información estática home, menu y contacto
+- live:     web con streaming, detectando objetos (yolo), usando CPU en RENDER
+- runpod:   web con streaming, detectando objetos (yolo), usando GPU Serverless en RUNPOD
