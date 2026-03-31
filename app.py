@@ -296,11 +296,11 @@ def procesar_frame_yolo_desde_base64(data_url: str):
 def procesar_y_detectar(frame_original):
     try:
         # Redimensionar para que el envío desde Lima sea ultra rápido
-        frame_pequeno = cv2.resize(frame_original, (640, 480))
-        _, buffer = cv2.imencode('.jpg', frame_pequeno, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
-        img_base64 = base64.b64encode(buffer).decode('utf-8')
+        # frame_pequeno = cv2.resize(frame_original, (640, 480))
+        # _, buffer = cv2.imencode('.jpg', frame_pequeno, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+        # img_base64 = base64.b64encode(buffer).decode('utf-8')
 
-        payload = {"input": {"image": img_base64}}
+        payload = {"input": {"frame": frame_original}}
         headers = {
             "Authorization": f"Bearer {API_KEY}",
             "Content-Type": "application/json"
@@ -311,9 +311,8 @@ def procesar_y_detectar(frame_original):
         if response.status_code == 200:
             res_json = response.json()
             if res_json.get("status") == "COMPLETED":
-                # IMPORTANTE: Mapear 'label' de RunPod a 'clase' de tu app.py si es necesario
-                # Aquí devolvemos el objeto tal cual lo manda la GPU
-                return res_json["output"]["objects"]
+                # return res_json["output"]["objects"]
+                return res_json["output"]
             
         return []
     except Exception as e:
@@ -524,64 +523,34 @@ def api_procesar_frame():
         return jsonify({"ok": False, "error": "No se recibió ningún frame"}), 400
 
     try:
-        if "," in frame_data:
-            _, encoded = frame_data.split(",", 1)
-        else:
-            encoded = frame_data
+        if "," not in frame_data:
+            return {"ok": False, "error": "Formato de imagen inválido"}
 
+        _, encoded = frame_data.split(",", 1)
         image_bytes = base64.b64decode(encoded)
         nparr = np.frombuffer(image_bytes, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        # Definir un diccionario de colores (B, G, R)
-        COLORES = {
-            'person': (0, 0, 255),      # Rojo
-            'dog': (255, 105, 180),     # Rosado para el perro (clase 16)
-            'car': (255, 0, 0),         # Azul
-            'bus': (255, 100, 0),       # Azul bus
-            'truck': (255, 100, 100),   # Azul truck
-            'motorcycle': (255, 0, 110) # Azul moto
-        }
+        if frame is None:
+            return {"ok": False, "error": "No se pudo decodificar el frame"}
+        
+        # Antes de llamar a RUNPOD
 
-        # 1. Obtener detecciones desde RunPod
-        objetos_detectados = procesar_y_detectar(frame)
+        # 1. Procesar frame desde RunPod
+        result = procesar_y_detectar(frame)
 
-        # 2. DIBUJAR LOS BOXES SOBRE EL FRAME
-        # RunPod devuelve: {"label": "person", "confidence": 0.9, "bbox": [x1, y1, x2, y2]}
-        for obj in objetos_detectados:
-            # bbox = obj["bbox"] # [x1, y1, x2, y2]
-            # label = f"{obj['label']} {obj['confidence']}"
-            label = obj['label']
-            conf = obj['confidence']
-            bbox = obj['bbox']
-            
-            # Seleccionar color o usar blanco por defecto
-            color = COLORES.get(label, (255, 255, 255))
-            
-            # Convertir coordenadas a enteros
-            x1, y1, x2, y2 = map(int, bbox)
-
-            # Dibujar cuadro y etiqueta con el color específico
-            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-            cv2.putText(frame, f"{label} {conf}", (x1, y1 - 10), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+        # Despues de llamar a RUNPOD
 
         # 3. Convertir el frame dibujado de nuevo a Base64 para el Frontend
-        _, buffer = cv2.imencode(".jpg", frame)
+        _, buffer = cv2.imencode(".jpg", result["frame"])
         annotated_base64 = base64.b64encode(buffer).decode("utf-8")
         annotated_data_url = f"data:image/jpeg;base64,{annotated_base64}"
-
-        # 4. Generar conteo para el JS
-        conteo = {}
-        for obj in objetos_detectados:
-            label = obj["label"]
-            conteo[label] = conteo.get(label, 0) + 1
 
         return jsonify({
             "ok": True,
             "imagen_procesada": annotated_data_url, # Imagen con cuadros
-            "detecciones": objetos_detectados,
-            "conteo": conteo
+            "detecciones": result["objects"],
+            "conteo": result["total_detected"]
         })
 
     except Exception as e:
