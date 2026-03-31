@@ -297,10 +297,10 @@ def procesar_y_detectar(frame_original):
     try:
         # Redimensionar para que el envío desde Lima sea ultra rápido
         # frame_pequeno = cv2.resize(frame_original, (640, 480))
-        # _, buffer = cv2.imencode('.jpg', frame_pequeno, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
-        # img_base64 = base64.b64encode(buffer).decode('utf-8')
+        _, buffer = cv2.imencode('.jpg', frame_original, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+        img_base64 = base64.b64encode(buffer).decode('utf-8')
 
-        payload = {"input": {"frame": frame_original}}
+        payload = {"input": {"frame": img_base64}}
         headers = {
             "Authorization": f"Bearer {API_KEY}",
             "Content-Type": "application/json"
@@ -536,19 +536,18 @@ def api_procesar_frame():
         
         # Antes de llamar a RUNPOD
 
-        # 1. Procesar frame desde RunPod
+        # Procesar frame desde RunPod
         result = procesar_y_detectar(frame)
 
-        # Despues de llamar a RUNPOD
+        if not result or "frame" not in result:
+            return jsonify({"ok": False, "error": "Error en RunPod"}), 500
 
-        # 3. Convertir el frame dibujado de nuevo a Base64 para el Frontend
-        _, buffer = cv2.imencode(".jpg", result["frame"])
-        annotated_base64 = base64.b64encode(buffer).decode("utf-8")
-        annotated_data_url = f"data:image/jpeg;base64,{annotated_base64}"
+        # El frame ya viene como string Base64 desde RunPod
+        annotated_data_url = f"data:image/jpeg;base64,{result['frame']}"
 
         return jsonify({
             "ok": True,
-            "imagen_procesada": annotated_data_url, # Imagen con cuadros
+            "imagen_procesada": annotated_data_url,
             "detecciones": result["objects"],
             "conteo": result["total_detected"]
         })
