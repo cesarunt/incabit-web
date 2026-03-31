@@ -533,23 +533,30 @@ def api_procesar_frame():
         if frame is None:
             return {"ok": False, "error": "No se pudo decodificar el frame"}
         
-        # Antes de llamar a RUNPOD
-
-        # Procesar frame desde RunPod
+        # 1. Llamar a RunPod
         result = procesar_y_detectar(frame)
 
-        if result and "status" in result and result["status"] == "success":
-            # El frame ya viene como string Base64 desde RunPod
-            annotated_data_url = f"data:image/jpeg;base64,{result['frame']}"
-
+        # 2. VALIDACIÓN CRÍTICA: Si RunPod falló o dio Timeout
+        if result is None or "frame" not in result:
             return jsonify({
-                "ok": True,
-                "imagen_procesada": annotated_data_url,
-                "detecciones": result["objects"],
-                "conteo": result.get("total_detected", 0) # Usa .get por seguridad
-            })
+                "ok": False, 
+                "error": "RunPod no respondió a tiempo",
+                "imagen_procesada": frame_data, # Devolvemos la original para no romper el stream
+                "conteo": 0
+            }), 200 # Devolvemos 200 para que el JS no se detenga por error 500
+
+        # 3. Si todo salió bien
+        annotated_data_url = f"data:image/jpeg;base64,{result['frame']}"
+
+        return jsonify({
+            "ok": True,
+            "imagen_procesada": annotated_data_url,
+            "detecciones": result.get("objects", []),
+            "conteo": result.get("total_detected", 0)
+        })
 
     except Exception as e:
+        print(f"Error interno en Render: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
