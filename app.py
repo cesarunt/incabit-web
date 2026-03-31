@@ -70,7 +70,7 @@ app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB
 # =========================================================
 # CONFIGURACIÓN YOLO
 # =========================================================
-YOLO_MODEL_NAME = "yolo8n.pt"
+YOLO_MODEL_NAME = "yolo11n.pt"
 YOLO_CONFIDENCE = 0.5
 
 # Clases COCO seleccionadas:
@@ -88,7 +88,7 @@ TRANSMISSION_GRACE_SECONDS = 5
 # =========================================================
 # CONFIGURACIÓN RUNPOD
 # =========================================================
-RUNPOD_URL = "https://api.runpod.ai/v2/swxfqoips3c2w6/runsync"
+RUNPOD_URL = "https://api.runpod.ai/v2/1cicb4kg8rp3kf/runsync"
 API_KEY = os.getenv("RUNPOD_API_KEY")
 
 # =========================================================
