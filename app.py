@@ -296,8 +296,8 @@ def procesar_frame_yolo_desde_base64(data_url: str):
 def procesar_y_detectar(frame_original):
     try:
         # Redimensionar para que el envío desde Lima sea ultra rápido
-        # frame_pequeno = cv2.resize(frame_original, (640, 480))
-        _, buffer = cv2.imencode('.jpg', frame_original, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+        frame_pequeno = cv2.resize(frame_original, (640, 480))
+        _, buffer = cv2.imencode('.jpg', frame_pequeno, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
         img_base64 = base64.b64encode(buffer).decode('utf-8')
 
         payload = {"input": {"frame": img_base64}}
@@ -306,15 +306,14 @@ def procesar_y_detectar(frame_original):
             "Content-Type": "application/json"
         }
 
-        response = requests.post(RUNPOD_URL, json=payload, headers=headers, timeout=8)
+        response = requests.post(RUNPOD_URL, json=payload, headers=headers, timeout=20)
         
         if response.status_code == 200:
             res_json = response.json()
             if res_json.get("status") == "COMPLETED":
-                # return res_json["output"]["objects"]
                 return res_json["output"]
             
-        return []
+        return None
     except Exception as e:
         print(f"Error RunPod: {e}")
         return []
@@ -539,18 +538,16 @@ def api_procesar_frame():
         # Procesar frame desde RunPod
         result = procesar_y_detectar(frame)
 
-        if not result or "frame" not in result:
-            return jsonify({"ok": False, "error": "Error en RunPod"}), 500
+        if result and "status" in result and result["status"] == "success":
+            # El frame ya viene como string Base64 desde RunPod
+            annotated_data_url = f"data:image/jpeg;base64,{result['frame']}"
 
-        # El frame ya viene como string Base64 desde RunPod
-        annotated_data_url = f"data:image/jpeg;base64,{result['frame']}"
-
-        return jsonify({
-            "ok": True,
-            "imagen_procesada": annotated_data_url,
-            "detecciones": result["objects"],
-            "conteo": result["total_detected"]
-        })
+            return jsonify({
+                "ok": True,
+                "imagen_procesada": annotated_data_url,
+                "detecciones": result["objects"],
+                "conteo": result.get("total_detected", 0) # Usa .get por seguridad
+            })
 
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
