@@ -531,7 +531,7 @@ def api_procesar_frame():
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if frame is None:
-            return {"ok": False, "error": "No se pudo decodificar el frame"}
+            return jsonify({"ok": False, "error": "No se pudo decodificar el frame"}), 400
         
         # 1. Llamar a RunPod
         result = procesar_y_detectar(frame)
