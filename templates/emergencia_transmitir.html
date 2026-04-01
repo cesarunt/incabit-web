@@ -340,18 +340,35 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .then(res => res.json())
         .then(data => {
-            if (!data.ok) {
-                estadoProceso.textContent = data.error || "Error al procesar el frame.";
-                procesando = false;
-                return;
-            }
-            console.log("Data")
-            console.log(data)
+            if (!data.ok) return;
 
-            placeholderResultado.style.display = "none";
-            resultadoImagen.src = data.imagen_procesada;
+            // 1. Limpiar el canvas para el nuevo dibujo
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 2. Dibujar el frame actual de la cámara
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // 3. Dibujar los cuadros (Boxes) recibidos de RunPod
+            data.detecciones.forEach(obj => {
+                const [x1, y1, x2, y2] = obj.bbox;
+                
+                // Configurar estilo (Verde para personas, Azul para vehículos)
+                ctx.strokeStyle = (obj.clase === 'person') ? "#00FF00" : "#00AAFF";
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+                // Dibujar etiqueta
+                ctx.fillStyle = ctx.strokeStyle;
+                ctx.font = "16px Arial";
+                ctx.fillText(`${obj.clase} ${obj.confianza}`, x1, y1 > 20 ? y1 - 5 : y1 + 15);
+            });
+
+            // 4. Mostrar el canvas procesado en el elemento <img> para el usuario
+            resultadoImagen.src = canvas.toDataURL("image/jpeg", 0.8);
             resultadoImagen.style.display = "block";
-
+            placeholderResultado.style.display = "none";
+            
             let personas = 0;
             let vehiculos = 0;
             let perros = 0;

@@ -537,45 +537,18 @@ def api_procesar_frame():
         # 1. Llamar a RunPod
         result = procesar_y_detectar(frame)
 
-        # 2. VALIDACIÓN CRÍTICA: Si RunPod falló o dio Timeout
-        if result is None or "frame" not in result:
-            return jsonify({
-                "ok": False,
-                "error": "RunPod no respondió a tiempo",
-                "imagen_procesada": frame_data,
-                "detecciones": [],
-                "conteo": 0
-            }), 200
+        if result is None:
+            return jsonify({"ok": False, "error": "Sin respuesta de GPU"}), 200
 
-        # 3. Imagen procesada devuelta por RunPod
-        annotated_data_url = f"data:image/jpeg;base64,{result['frame']}"
-
-        # 1. Crear un diccionario de conteo compatible con el JS del frontend
-        conteo_formateado = {
-            "person": 0,
-            "car": 0,
-            "motorcycle": 0,
-            "bus": 0,
-            "truck": 0,
-            "dog": 0
-        }
-        # 2. Mapear las detecciones de RunPod al conteo
-        # RunPod devuelve: [{"clase": "person", ...}, {"clase": "dog", ...}]
-        if result and "objects" in result:
-            for obj in result["objects"]:
-                clase_detectada = obj["clase"]
-                if clase_detectada in conteo_formateado:
-                    conteo_formateado[clase_detectada] += 1
-        
+        # 2. Enviamos los datos crudos al celular
         return jsonify({
             "ok": True,
-            "imagen_procesada": annotated_data_url,
-            "detecciones": result['objects'],
-            "conteo": conteo_formateado 
+            "detecciones": result.get("objects", []),
+            "conteo": result.get("total_detected", 0)
         })
 
     except Exception as e:
-        print(f"Error interno en Render: {e}")
+        print(f"Error en procesamiento: {e}")
         return jsonify({
             "ok": False,
             "error": str(e),
