@@ -63,3 +63,19 @@ input,textarea{width:100%;margin-top:.45rem;border-radius:14px;border:1px solid 
 .flash-message { margin-bottom: 18px; border-left: 4px solid transparent; }
 .flash-success { border-left-color: #22c55e; }
 .flash-error { border-left-color: #ef4444; padding: 1rem; font-weight: 300;}
+
+#btn-descargar-imagen {
+    display: none; /* Se activa por JS */
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background-color: #22c55e;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+}
+#btn-descargar-imagen::after {
+    content: "Descargar mejor captura";
+    font-weight: bold;
+}
