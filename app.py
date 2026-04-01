@@ -549,12 +549,29 @@ def api_procesar_frame():
 
         # 3. Imagen procesada devuelta por RunPod
         annotated_data_url = f"data:image/jpeg;base64,{result['frame']}"
+
+        # 1. Crear un diccionario de conteo compatible con el JS del frontend
+        conteo_formateado = {
+            "person": 0,
+            "car": 0,
+            "motorcycle": 0,
+            "bus": 0,
+            "truck": 0,
+            "dog": 0
+        }
+        # 2. Mapear las detecciones de RunPod al conteo
+        # RunPod devuelve: [{"clase": "person", ...}, {"clase": "dog", ...}]
+        if result and "objects" in result:
+            for obj in result["objects"]:
+                clase_detectada = obj["clase"]
+                if clase_detectada in conteo_formateado:
+                    conteo_formateado[clase_detectada] += 1
         
         return jsonify({
             "ok": True,
             "imagen_procesada": annotated_data_url,
             "detecciones": result['objects'],
-            "conteo": result['total_detected']
+            "conteo": conteo_formateado 
         })
 
     except Exception as e:
