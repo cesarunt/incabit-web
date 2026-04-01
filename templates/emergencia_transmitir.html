@@ -207,47 +207,59 @@ document.addEventListener("DOMContentLoaded", function () {
     async function finalizarTransmision(mensaje) {
         transmisionActiva = false;
 
-        // 1. Detener intervalos y cámara inmediatamente
-        if (intervalId) { clearInterval(intervalId); intervalId = null; }
-        if (countdownId) { clearInterval(countdownId); countdownId = null; }
+        if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+        }
+
+        if (countdownId) {
+            clearInterval(countdownId);
+            countdownId = null;
+        }
+
         detenerCamara();
 
-        // 2. Notificar al servidor
         try {
-            await fetch("/api/emergencia/finalizar-transmision", { method: "POST" });
+            await fetch("/api/emergencia/finalizar-transmision", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
         } catch (error) {
             console.error("Error liberando transmisión:", error);
         }
 
-        // 3. Preparar el Resumen Final
-        const personasFinal = mejorConteo.person || 0;
-        const vehiculosFinal = mejorConteo.vehiculos || 0;
-        const perrosFinal = mejorConteo.dog || 0;
+        panelTransmision.style.display = "none";
+        bloqueInicial.style.display = "flex";
+        mensajeFinal.style.display = "block";
+        resultadoFinal.style.display = "block";
 
-        filaFinalPersonas.innerHTML = 'Personas: <b id="final-personas">0</b>';
-        filaFinalVehiculos.innerHTML = 'Vehículos: <b id="final-vehiculos">0</b>';
-        filaFinalPerros.innerHTML = 'Perros: <b id="final-perros">0</b>';
+        const p = mensajeFinal.querySelector("p b");
+        if (p) {
+            p.textContent = mensaje || "La transmisión ha finalizado";
+        }
+        setTimeout(() => {
+            mensajeFinal.style.display = "none";
+        }, 10000);
 
-        const finalPersonasRef = document.getElementById("final-personas");
-        const finalVehiculosRef = document.getElementById("final-vehiculos");
-        const finalPerrosRef = document.getElementById("final-perros");
+        const personasFinal = mejorConteo.person || ultimoResumen.person || 0;
+        const vehiculosFinal = mejorConteo.vehiculos || ultimoResumen.vehiculos || 0;
+        const perrosFinal = mejorConteo.dog || ultimoResumen.dog || 0;
 
-        finalPersonasRef.textContent = personasFinal;
-        finalVehiculosRef.textContent = vehiculosFinal;
-        finalPerrosRef.textContent = perrosFinal;
+        finalPersonas.textContent = personasFinal;
+        finalVehiculos.textContent = vehiculosFinal;
+        finalPerros.textContent = perrosFinal;
 
-        // Mostrar/Ocultar filas según si hubo detecciones
         filaFinalPersonas.style.display = personasFinal > 0 ? "block" : "none";
         filaFinalVehiculos.style.display = vehiculosFinal > 0 ? "block" : "none";
         filaFinalPerros.style.display = perrosFinal > 0 ? "block" : "none";
 
-        // Si no hubo nada, mostrar mensaje de vacío
         if (personasFinal === 0 && vehiculosFinal === 0 && perrosFinal === 0) {
             filaFinalPersonas.style.display = "block";
-            filaFinalPersonas.innerHTML = "No se detectaron objetos de interés.";
+            filaFinalPersonas.innerHTML = "Sin objetos detectados";
         }
 
-        // 4. Mostrar la mejor imagen y configurar botón de descarga
         if (mejorFrameProcesado) {
             finalImagen.src = mejorFrameProcesado;
             finalImagen.style.display = "block";
@@ -255,17 +267,13 @@ document.addEventListener("DOMContentLoaded", function () {
             btnDescargarImagen.href = mejorFrameProcesado;
             btnDescargarImagen.download = generarNombreImagen();
             btnDescargarImagen.style.display = "inline-flex";
+        } else {
+            finalImagen.style.display = "none";
+            btnDescargarImagen.style.display = "none";
         }
 
-        // 5. Intercambio de paneles en la UI
-        panelTransmision.style.display = "none";
-        resultadoFinal.style.display = "block"; // Aquí se muestra el resumen
-        mensajeFinal.style.display = "block";
+        limpiarPanel();
 
-        const p = mensajeFinal.querySelector("p b");
-        if (p) p.textContent = mensaje || "La transmisión ha finalizado";
-
-        // Limpieza y reset de botones
         iniciando = false;
         btnIniciarPrincipal.disabled = false;
         btnIniciarPrincipal.style.opacity = "1";
@@ -337,6 +345,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 procesando = false;
                 return;
             }
+            console.log("Data")
+            console.log(data)
 
             placeholderResultado.style.display = "none";
             resultadoImagen.src = data.imagen_procesada;

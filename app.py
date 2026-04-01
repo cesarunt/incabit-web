@@ -229,69 +229,70 @@ def get_yolo_model():
     return yolo_model
 
 
-def procesar_frame_yolo_desde_base64(data_url: str):
-    """
-    Recibe una imagen base64 (data:image/jpeg;base64,...)
-    y devuelve imagen anotada + detecciones + conteo.
-    """
-    try:
-        if "," not in data_url:
-            return {"ok": False, "error": "Formato de imagen inválido"}
+# def procesar_frame_yolo_desde_base64(data_url: str):
+#     """
+#     Recibe una imagen base64 (data:image/jpeg;base64,...)
+#     y devuelve imagen anotada + detecciones + conteo.
+#     """
+#     try:
+#         if "," not in data_url:
+#             return {"ok": False, "error": "Formato de imagen inválido"}
 
-        _, encoded = data_url.split(",", 1)
-        image_bytes = base64.b64decode(encoded)
-        np_array = np.frombuffer(image_bytes, np.uint8)
-        frame = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
+#         _, encoded = data_url.split(",", 1)
+#         image_bytes = base64.b64decode(encoded)
+#         np_array = np.frombuffer(image_bytes, np.uint8)
+#         frame = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
 
-        if frame is None:
-            return {"ok": False, "error": "No se pudo decodificar el frame"}
+#         if frame is None:
+#             return {"ok": False, "error": "No se pudo decodificar el frame"}
 
-        model = get_yolo_model()
+#         model = get_yolo_model()
 
-        results = model.predict(
-            source=frame,
-            conf=YOLO_CONFIDENCE,
-            classes=YOLO_CLASSES,
-            imgsz=640,
-            verbose=False
-        )
+#         results = model.predict(
+#             source=frame,
+#             conf=YOLO_CONFIDENCE,
+#             classes=YOLO_CLASSES,
+#             imgsz=640,
+#             verbose=False
+#         )
 
-        result = results[0]
-        annotated = result.plot()
+#         result = results[0]
+#         annotated = result.plot()
 
-        detecciones = []
-        conteo = {}
+#         detecciones = []
+#         conteo = {}
 
-        if result.boxes is not None:
-            names = result.names
-            for box in result.boxes:
-                cls_id = int(box.cls[0].item())
-                conf = float(box.conf[0].item())
+#         if result.boxes is not None:
+#             names = result.names
+#             for box in result.boxes:
+#                 cls_id = int(box.cls[0].item())
+#                 conf = float(box.conf[0].item())
 
-                if conf >= YOLO_CONFIDENCE:
-                    clase = names[cls_id]
-                    detecciones.append({
-                        "clase": clase,
-                        "confianza": round(conf, 3)
-                    })
-                    conteo[clase] = conteo.get(clase, 0) + 1
+#                 if conf >= YOLO_CONFIDENCE:
+#                     clase = names[cls_id]
+#                     detecciones.append({
+#                         "clase": clase,
+#                         "confianza": round(conf, 3)
+#                     })
+#                     conteo[clase] = conteo.get(clase, 0) + 1
 
-        ok, buffer = cv2.imencode(".jpg", annotated)
-        if not ok:
-            return {"ok": False, "error": "No se pudo codificar la imagen procesada"}
+#         ok, buffer = cv2.imencode(".jpg", annotated)
+#         if not ok:
+#             return {"ok": False, "error": "No se pudo codificar la imagen procesada"}
 
-        annotated_base64 = base64.b64encode(buffer).decode("utf-8")
-        annotated_data_url = f"data:image/jpeg;base64,{annotated_base64}"
+#         annotated_base64 = base64.b64encode(buffer).decode("utf-8")
+#         annotated_data_url = f"data:image/jpeg;base64,{annotated_base64}"
 
-        return jsonify({
-            "ok": True,
-            "imagen_procesada": annotated_data_url,
-            "detecciones": detecciones,
-            "conteo": conteo
-        })
+#         return jsonify({
+#             "ok": True,
+#             "imagen_procesada": annotated_data_url,
+#             "detecciones": detecciones,
+#             "conteo": conteo
+#         })
 
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
+#     except Exception as e:
+#         return {"ok": False, "error": str(e)}
+
 
 def procesar_y_detectar(frame_original):
     try:
@@ -543,48 +544,17 @@ def api_procesar_frame():
                 "error": "RunPod no respondió a tiempo",
                 "imagen_procesada": frame_data,
                 "detecciones": [],
-                "conteo": {
-                    "person": 0,
-                    "car": 0,
-                    "motorcycle": 0,
-                    "bus": 0,
-                    "truck": 0,
-                    "dog": 0
-                }
+                "conteo": 0
             }), 200
 
         # 3. Imagen procesada devuelta por RunPod
         annotated_data_url = f"data:image/jpeg;base64,{result['frame']}"
-
-        objects = result.get("objects", []) or []
-
-        detecciones = []
-        conteo = {
-            "person": 0,
-            "car": 0,
-            "motorcycle": 0,
-            "bus": 0,
-            "truck": 0,
-            "dog": 0
-        }
-
-        for item in objects:
-            clase = str(item.get("class", "")).strip().lower()
-            confianza = item.get("confidence", 0)
-
-            if clase in conteo:
-                conteo[clase] += 1
-
-            detecciones.append({
-                "clase": clase,
-                "confianza": round(float(confianza), 3) if confianza is not None else 0
-            })
-
+        
         return jsonify({
             "ok": True,
             "imagen_procesada": annotated_data_url,
-            "detecciones": detecciones,
-            "conteo": conteo
+            "detecciones": result['objects'],
+            "conteo": result['total_detected']
         })
 
     except Exception as e:
@@ -593,14 +563,7 @@ def api_procesar_frame():
             "ok": False,
             "error": str(e),
             "detecciones": [],
-            "conteo": {
-                "person": 0,
-                "car": 0,
-                "motorcycle": 0,
-                "bus": 0,
-                "truck": 0,
-                "dog": 0
-            }
+            "conteo": 0
         }), 500
 
 
