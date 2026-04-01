@@ -283,12 +283,12 @@ def procesar_frame_yolo_desde_base64(data_url: str):
         annotated_base64 = base64.b64encode(buffer).decode("utf-8")
         annotated_data_url = f"data:image/jpeg;base64,{annotated_base64}"
 
-        return {
+        return jsonify({
             "ok": True,
             "imagen_procesada": annotated_data_url,
             "detecciones": detecciones,
             "conteo": conteo
-        }
+        })
 
     except Exception as e:
         return {"ok": False, "error": str(e)}
@@ -539,20 +539,52 @@ def api_procesar_frame():
         # 2. VALIDACIÓN CRÍTICA: Si RunPod falló o dio Timeout
         if result is None or "frame" not in result:
             return jsonify({
-                "ok": False, 
+                "ok": False,
                 "error": "RunPod no respondió a tiempo",
-                "imagen_procesada": frame_data, # Devolvemos la original para no romper el stream
-                "conteo": 0
-            }), 200 # Devolvemos 200 para que el JS no se detenga por error 500
+                "imagen_procesada": frame_data,
+                "detecciones": [],
+                "conteo": {
+                    "person": 0,
+                    "car": 0,
+                    "motorcycle": 0,
+                    "bus": 0,
+                    "truck": 0,
+                    "dog": 0
+                }
+            }), 200
 
-        # 3. Si todo salió bien
+        # 3. Imagen procesada devuelta por RunPod
         annotated_data_url = f"data:image/jpeg;base64,{result['frame']}"
+
+        objects = result.get("objects", []) or []
+
+        detecciones = []
+        conteo = {
+            "person": 0,
+            "car": 0,
+            "motorcycle": 0,
+            "bus": 0,
+            "truck": 0,
+            "dog": 0
+        }
+
+        for item in objects:
+            clase = str(item.get("class", "")).strip().lower()
+            confianza = item.get("confidence", 0)
+
+            if clase in conteo:
+                conteo[clase] += 1
+
+            detecciones.append({
+                "clase": clase,
+                "confianza": round(float(confianza), 3) if confianza is not None else 0
+            })
 
         return jsonify({
             "ok": True,
             "imagen_procesada": annotated_data_url,
-            "detecciones": result.get("objects", []),
-            "conteo": result.get("total_detected", 0)
+            "detecciones": detecciones,
+            "conteo": conteo
         })
 
     except Exception as e:

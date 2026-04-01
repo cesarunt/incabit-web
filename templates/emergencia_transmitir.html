@@ -224,9 +224,17 @@ document.addEventListener("DOMContentLoaded", function () {
         const vehiculosFinal = mejorConteo.vehiculos || 0;
         const perrosFinal = mejorConteo.dog || 0;
 
-        finalPersonas.textContent = personasFinal;
-        finalVehiculos.textContent = vehiculosFinal;
-        finalPerros.textContent = perrosFinal;
+        filaFinalPersonas.innerHTML = 'Personas: <b id="final-personas">0</b>';
+        filaFinalVehiculos.innerHTML = 'Vehículos: <b id="final-vehiculos">0</b>';
+        filaFinalPerros.innerHTML = 'Perros: <b id="final-perros">0</b>';
+
+        const finalPersonasRef = document.getElementById("final-personas");
+        const finalVehiculosRef = document.getElementById("final-vehiculos");
+        const finalPerrosRef = document.getElementById("final-perros");
+
+        finalPersonasRef.textContent = personasFinal;
+        finalVehiculosRef.textContent = vehiculosFinal;
+        finalPerrosRef.textContent = perrosFinal;
 
         // Mostrar/Ocultar filas según si hubo detecciones
         filaFinalPersonas.style.display = personasFinal > 0 ? "block" : "none";
