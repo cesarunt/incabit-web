@@ -516,14 +516,14 @@ def api_procesar_frame():
         }), 403
 
     data = request.get_json(silent=True) or {}
-    frame_data = data.get("frame") # Esto viene como data:image/jpeg;base64,...
+    frame_data = data.get("frame")  # Viene como data:image/jpeg;base64,...
 
     if not frame_data:
         return jsonify({"ok": False, "error": "No se recibió ningún frame"}), 400
 
     try:
         if "," not in frame_data:
-            return {"ok": False, "error": "Formato de imagen inválido"}
+            return jsonify({"ok": False, "error": "Formato de imagen inválido"}), 400
 
         _, encoded = frame_data.split(",", 1)
         image_bytes = base64.b64decode(encoded)
@@ -589,7 +589,19 @@ def api_procesar_frame():
 
     except Exception as e:
         print(f"Error interno en Render: {e}")
-        return jsonify({"ok": False, "error": str(e)}), 500
+        return jsonify({
+            "ok": False,
+            "error": str(e),
+            "detecciones": [],
+            "conteo": {
+                "person": 0,
+                "car": 0,
+                "motorcycle": 0,
+                "bus": 0,
+                "truck": 0,
+                "dog": 0
+            }
+        }), 500
 
 
 @app.route("/api/emergencia/estado-transmision")
