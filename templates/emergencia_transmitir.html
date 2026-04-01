@@ -55,11 +55,21 @@
         <article class="card">
             <h3>Cámara y Resultados en vivo</h3>
 
-            <video id="video" autoplay playsinline muted
+            <div class="contenedor-video" style="position: relative; width: 100%; max-width: 640px; margin: 0 auto;">
+                <video id="video" autoplay playsinline muted 
+                    style="width: 100%; border-radius: 14px; background: #111; display: block;">
+                </video>
+
+                <canvas id="canvas-deteccion" 
+                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+                </canvas>
+            </div>
+
+            <!-- <video id="video" autoplay playsinline muted
                    style="width: 100%; border-radius: 14px; background: #111; max-width: 120px; object-fit: cover; display: block; margin-left: auto; margin-right: auto;" hidden>
             </video>
 
-            <canvas id="canvas" style="display:none;"></canvas> <br>
+            <canvas id="canvas" style="display:none;"></canvas> <br> -->
 
             <!-- Resultado en vivo -->
             <img id="resultado-imagen"
@@ -120,8 +130,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const btnDetener = document.getElementById("btn-detener");
 
     const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const resultadoImagen = document.getElementById("resultado-imagen");
+    // const canvas = document.getElementById("canvas");
+    const canvasDeteccion = document.getElementById("canvas-deteccion");
+    const ctx = canvasDeteccion.getContext("2d");
+
+    // const resultadoImagen = document.getElementById("resultado-imagen");
     const placeholderResultado = document.getElementById("placeholder-resultado");
     const listaDetecciones = document.getElementById("lista-detecciones");
     const estadoProceso = document.getElementById("estado-proceso");
@@ -177,9 +190,38 @@ document.addEventListener("DOMContentLoaded", function () {
         panelTransmision.style.display = "block";
     }
 
+    function dibujarDetecciones(detecciones) {
+        // 1. Ajustar el tamaño del canvas al tamaño real del video en ese momento
+        canvasDeteccion.width = video.videoWidth;
+        canvasDeteccion.height = video.videoHeight;
+
+        // 2. Limpiar dibujos anteriores
+        ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
+
+        // 3. Dibujar cada caja recibida del JSON de RunPod
+        detecciones.forEach(obj => {
+            const [x1, y1, x2, y2] = obj.bbox;
+            const color = (obj.clase === 'person') ? "#00FF00" : "#00AAFF"; // Verde o Azul
+
+            // Dibujar Rectángulo
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+            // Dibujar Fondo de Etiqueta
+            ctx.fillStyle = color;
+            ctx.fillRect(x1, y1 - 25, 100, 25);
+
+            // Texto
+            ctx.fillStyle = "#000000";
+            ctx.font = "bold 18px Arial";
+            ctx.fillText(`${obj.clase}`, x1 + 5, y1 - 7);
+        });
+    }
+
     function limpiarPanel() {
-        resultadoImagen.src = "";
-        resultadoImagen.style.display = "none";
+        // resultadoImagen.src = "";
+        // resultadoImagen.style.display = "none";
         placeholderResultado.style.display = "flex";
         estadoProceso.textContent = "Preparado para procesar snapshots.";
         estadoCamara.textContent = "Frecuencia inicial: 1 snapshot cada 1 segundo.";
@@ -342,33 +384,8 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(data => {
             if (!data.ok) return;
 
-            // 1. Limpiar el canvas para el nuevo dibujo
-            const ctx = canvas.getContext("2d");
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // 2. Dibujar el frame actual de la cámara
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // 3. Dibujar los cuadros (Boxes) recibidos de RunPod
-            data.detecciones.forEach(obj => {
-                const [x1, y1, x2, y2] = obj.bbox;
-                
-                // Configurar estilo (Verde para personas, Azul para vehículos)
-                ctx.strokeStyle = (obj.clase === 'person') ? "#00FF00" : "#00AAFF";
-                ctx.lineWidth = 3;
-                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-
-                // Dibujar etiqueta
-                ctx.fillStyle = ctx.strokeStyle;
-                ctx.font = "16px Arial";
-                ctx.fillText(`${obj.clase} ${obj.confianza}`, x1, y1 > 20 ? y1 - 5 : y1 + 15);
-            });
-
-            // 4. Mostrar el canvas procesado en el elemento <img> para el usuario
-            resultadoImagen.src = canvas.toDataURL("image/jpeg", 0.8);
-            resultadoImagen.style.display = "block";
-            placeholderResultado.style.display = "none";
-            
+            dibujarDetecciones(data.detecciones);
+                        
             let personas = 0;
             let vehiculos = 0;
             let perros = 0;
@@ -549,7 +566,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 listaDetecciones.innerHTML = "";
             }
             placeholderResultado.style.display = "flex";
-            resultadoImagen.style.display = "none";
+            // resultadoImagen.style.display = "none";
 
             capturarFrame();
             intervalId = setInterval(capturarFrame, INTERVALO_MS);

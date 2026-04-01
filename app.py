@@ -539,12 +539,30 @@ def api_procesar_frame():
 
         if result is None:
             return jsonify({"ok": False, "error": "Sin respuesta de GPU"}), 200
+        
+        # 1. Crear un diccionario de conteo compatible con el JS del frontend
+        conteo_formateado = {
+            "person": 0,
+            "car": 0,
+            "motorcycle": 0,
+            "bus": 0,
+            "truck": 0,
+            "dog": 0
+        }
 
-        # 2. Enviamos los datos crudos al celular
+        # 2. Mapear las detecciones de RunPod al conteo
+        # RunPod devuelve: [{"clase": "person", ...}, {"clase": "dog", ...}]
+        if result and "objects" in result:
+            for obj in result["objects"]:
+                clase_detectada = obj["clase"]
+                if clase_detectada in conteo_formateado:
+                    conteo_formateado[clase_detectada] += 1
+
+        # 3. Enviamos los datos crudos al celular
         return jsonify({
             "ok": True,
             "detecciones": result.get("objects", []),
-            "conteo": result.get("total_detected", 0)
+            "conteo": conteo_formateado
         })
 
     except Exception as e:
