@@ -72,14 +72,14 @@
             <canvas id="canvas" style="display:none;"></canvas> <br> -->
 
             <!-- Resultado en vivo -->
-            <img id="resultado-imagen"
+            <!-- <img id="resultado-imagen"
                  style="width: 100%; border-radius: 14px; background: #111; max-height: 640px; object-fit: contain; display: none;"
                  alt="Resultado YOLO">
 
             <div id="placeholder-resultado"
                  style="width: 100%; min-height: 320px; border-radius: 14px; background: #111; display: flex; align-items: center; justify-content: center; color: #777;">
                 Esperando procesamiento...
-            </div>
+            </div> -->
 
             <div id="estado-proceso" style="margin-top: 14px; color: #9ca3af;">
                 Preparado para procesar ...
@@ -135,7 +135,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const ctx = canvasDeteccion.getContext("2d");
 
     // const resultadoImagen = document.getElementById("resultado-imagen");
-    const placeholderResultado = document.getElementById("placeholder-resultado");
+    // const placeholderResultado = document.getElementById("placeholder-resultado");
     const listaDetecciones = document.getElementById("lista-detecciones");
     const estadoProceso = document.getElementById("estado-proceso");
     const estadoCamara = document.getElementById("estado-camara");
@@ -222,7 +222,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function limpiarPanel() {
         // resultadoImagen.src = "";
         // resultadoImagen.style.display = "none";
-        placeholderResultado.style.display = "flex";
+        // placeholderResultado.style.display = "flex";
         estadoProceso.textContent = "Preparado para procesar snapshots.";
         estadoCamara.textContent = "Frecuencia inicial: 1 snapshot cada 1 segundo.";
         video.srcObject = null;
@@ -365,13 +365,13 @@ document.addEventListener("DOMContentLoaded", function () {
         const maxWidth = 640;
         const scale = maxWidth / video.videoWidth;
 
-        canvas.width = maxWidth;
-        canvas.height = Math.round(video.videoHeight * scale);
+        canvasDeteccion.width = maxWidth;
+        canvasDeteccion.height = Math.round(video.videoHeight * scale);
 
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const ctx = canvasDeteccion.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvasDeteccion.width, canvasDeteccion.height);
 
-        const frameData = canvas.toDataURL("image/jpeg", 0.75);
+        const frameData = canvasDeteccion.toDataURL("image/jpeg", 0.75);
 
         fetch("/api/emergencia/procesar-frame", {
             method: "POST",
@@ -565,7 +565,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (listaDetecciones) {
                 listaDetecciones.innerHTML = "";
             }
-            placeholderResultado.style.display = "flex";
+            // placeholderResultado.style.display = "flex";
             // resultadoImagen.style.display = "none";
 
             capturarFrame();
