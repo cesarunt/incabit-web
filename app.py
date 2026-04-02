@@ -561,6 +561,7 @@ def api_procesar_frame():
         # 3. Enviamos los datos crudos al celular
         return jsonify({
             "ok": True,
+            "imagen_procesada": frame_data,
             "detecciones": result.get("objects", []),
             "conteo": conteo_formateado
         })

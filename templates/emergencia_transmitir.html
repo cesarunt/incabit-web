@@ -54,11 +54,11 @@
 
             <div class="contenedor-video" style="position: relative; width: 100%; max-width: 640px; margin: 0 auto;">
                 <video id="video" autoplay playsinline muted 
-                    style="width: 100%; border-radius: 14px; background: #111; object-fit: cover; display: block; margin-left: auto; margin-right: auto;" hidden>
+                    style="width: 100%; border-radius: 14px; background: #111; object-fit: cover; display: block;">
                 </video>
 
                 <canvas id="canvas-deteccion" 
-                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; pointer-events: none;">
+                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; pointer-events: none; z-index: 10;">
                 </canvas>
             </div>
 
@@ -188,31 +188,37 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function dibujarDetecciones(detecciones) {
-        // 1. Ajustar el tamaño del canvas al tamaño real del video en ese momento
+        // 1. Sincronizar tamaño del canvas con el tamaño visual del video
         canvasDeteccion.width = video.videoWidth;
         canvasDeteccion.height = video.videoHeight;
 
-        // 2. Limpiar dibujos anteriores
+        // 2. Limpiar dibujos previos
         ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
 
-        // 3. Dibujar cada caja recibida del JSON de RunPod
+        // 3. Factor de escala: RunPod procesó a 640px de ancho
+        // Necesitamos ajustar las coordenadas si el video es más grande o pequeño
+        const scaleX = video.videoWidth / 640;
+        // Calculamos scaleY basado en la misma proporción para no deformar
+        const scaleY = video.videoHeight / (video.videoHeight * (640 / video.videoWidth));
+
         detecciones.forEach(obj => {
-            const [x1, y1, x2, y2] = obj.bbox;
-            const color = (obj.clase === 'person') ? "#00FF00" : "#00AAFF"; // Verde o Azul
+            // Ajustar coordenadas a la pantalla real del celular
+            const x1 = obj.bbox[0] * scaleX;
+            const y1 = obj.bbox[1] * scaleX; // Usamos scaleX para mantener proporción
+            const x2 = obj.bbox[2] * scaleX;
+            const y2 = obj.bbox[3] * scaleX;
+
+            const color = (obj.clase === 'person') ? "#00FF00" : "#00AAFF";
 
             // Dibujar Rectángulo
             ctx.strokeStyle = color;
             ctx.lineWidth = 4;
             ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
 
-            // Dibujar Fondo de Etiqueta
+            // Dibujar Etiqueta
             ctx.fillStyle = color;
-            ctx.fillRect(x1, y1 - 25, 100, 25);
-
-            // Texto
-            ctx.fillStyle = "#000000";
-            ctx.font = "bold 18px Arial";
-            ctx.fillText(`${obj.clase}`, x1 + 5, y1 - 7);
+            ctx.font = "bold 16px Arial";
+            ctx.fillText(`${obj.clase} ${Math.round(obj.confianza * 100)}%`, x1, y1 > 20 ? y1 - 5 : y1 + 15);
         });
     }
 
