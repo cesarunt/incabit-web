@@ -308,7 +308,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (mejorFrameProcesado) {
             finalImagen.src = mejorFrameProcesado;
             finalImagen.style.display = "block";
-
+            finalImagen.style.width = "100%"; // Para que no se desborde en el resumen
+            
             btnDescargarImagen.href = mejorFrameProcesado;
             btnDescargarImagen.style.display = "inline-flex";
             btnDescargarImagen.download = generarNombreImagen();
@@ -425,7 +426,35 @@ document.addEventListener("DOMContentLoaded", function () {
                     total: totalObjetos
                 };
 
-                mejorFrameProcesado = data.imagen_procesada;
+                // FUSIONAR: Creamos un canvas temporal para combinar foto + cuadros
+                const canvasFinal = document.createElement("canvas");
+                canvasFinal.width = canvasDeteccion.width;
+                canvasFinal.height = canvasDeteccion.height;
+                const tempCtx = canvasFinal.getContext("2d");
+
+                // 1. Dibujar la imagen original (el fondo)
+                tempCtx.drawImage(video, 0, 0, canvasFinal.width, canvasFinal.height);
+
+                // 2. Dibujar cuadros (mismo bucle que ya tienes)
+                data.detecciones.forEach(obj => {
+                    const [x1, y1, x2, y2] = obj.bbox;
+                    tempCtx.strokeStyle = (obj.clase === 'person') ? "#00FF00" : "#00AAFF";
+                    tempCtx.lineWidth = 4;
+                    tempCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                });
+
+                // 3. ESTAMPAR FECHA Y HORA (Watermark)
+                const ahora = new Date();
+                const textoFecha = ahora.toLocaleString('es-PE', { timeZone: 'America/Lima' });
+                tempCtx.fillStyle = "white";
+                tempCtx.shadowColor = "black";
+                tempCtx.shadowBlur = 7;
+                tempCtx.font = "bold 20px Arial";
+                // Posición: Esquina inferior derecha
+                tempCtx.fillText(textoFecha, canvasFinal.width - 250, canvasFinal.height - 20);
+
+                // 4. Guardar esta versión "combinada" como la mejor para el resumen
+                mejorFrameProcesado = canvasFinal.toDataURL("image/jpeg", 0.85);
             }
 
             if (listaDetecciones) {
@@ -488,6 +517,23 @@ document.addEventListener("DOMContentLoaded", function () {
     // Click on button "Iniciar Transmisión"
     btnIniciarPrincipal.addEventListener("click", async function () {
         if (transmisionActiva || iniciando) return;
+
+        // --- LIMPIEZA TOTAL PARA NUEVA TRANSMISIÓN ---
+        mejorFrameProcesado = null;
+        finalImagen.src = ""; // Limpia la imagen pegada
+        finalImagen.style.display = "none";
+        resultadoFinal.style.display = "none";
+        btnDescargarImagen.style.display = "none";
+        
+        // Limpiar el dibujo del canvas de la vez anterior
+        ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
+        
+        // Resetear contadores visuales
+        conteoPersonas.textContent = "0";
+        conteoVehiculos.textContent = "0";
+        if (document.getElementById("conteo-perros")) {
+            document.getElementById("conteo-perros").textContent = "0";
+        }
 
         iniciando = true;
         btnIniciarPrincipal.disabled = true;
