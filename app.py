@@ -257,7 +257,7 @@ def procesar_frame_yolo_desde_base64(data_url: str):
         )
 
         result = results[0]
-        annotated = result.plot()
+        # annotated = result.plot()
 
         detecciones = []
         conteo = {}
@@ -296,7 +296,7 @@ def procesar_frame_yolo_desde_base64(data_url: str):
             "ok": True,
             "objects": detecciones,
             "conteo": conteo_formateado,
-            "imagen_procesada": annotated
+            "imagen_procesada": data_url
         }
 
     except Exception as e:
@@ -316,7 +316,7 @@ def procesar_y_detectar(frame_original):
             "Content-Type": "application/json"
         }
 
-        response = requests.post(RUNPOD_URL, json=payload, headers=headers, timeout=20)
+        response = requests.post(RUNPOD_URL, json=payload, headers=headers, timeout=10)
         
         if response.status_code == 200:
             res_json = response.json()
