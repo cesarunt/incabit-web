@@ -28,10 +28,6 @@
                     <div id="fila-final-perros">Perros: <b id="final-perros">0</b></div>
                 </div>
 
-                <div style="margin-top: 12px; text-align: center;">
-                    <p>👤 = <b id="conteo-personas">0</b> &nbsp;&nbsp; 🚗 = <b id="conteo-vehiculos">0</b> &nbsp;&nbsp; 🐶 = <b id="conteo-perros">0</b></p>
-                </div>
-
                 <div style="margin-top: 22px;">
                     <img
                         id="final-imagen"
@@ -87,9 +83,9 @@
                 Preparado para procesar ...
             </div>
 
-            <div style="margin-top: 12px; text-align: center;">
+            <!-- <div style="margin-top: 12px; text-align: center;">
                 <p>👤 = <b id="conteo-personas">0</b> &nbsp;&nbsp; 🚗 = <b id="conteo-vehiculos">0</b> &nbsp;&nbsp; 🐶 = <b id="conteo-perros">0</b></p>
-            </div>
+            </div> -->
 
             <div style="margin-top: 18px;" hidden>
                 <h4>Detecciones</h4>
@@ -240,9 +236,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function limpiarPanel() {
-        // resultadoImagen.src = "";
-        // resultadoImagen.style.display = "none";
-        // placeholderResultado.style.display = "flex";
         estadoProceso.textContent = "Preparado para procesar snapshots.";
         estadoCamara.textContent = "Frecuencia inicial: 1 snapshot cada 1 segundo.";
         video.srcObject = null;

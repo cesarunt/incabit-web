@@ -257,7 +257,7 @@ def procesar_frame_yolo_desde_base64(data_url: str):
         )
 
         result = results[0]
-        # annotated = result.plot()
+        annotated = result.plot()
 
         detecciones = []
         conteo = {}
@@ -296,7 +296,7 @@ def procesar_frame_yolo_desde_base64(data_url: str):
             "ok": True,
             "objects": detecciones,
             "conteo": conteo_formateado,
-            "imagen_procesada": data_url
+            "imagen_procesada": annotated
         }
 
     except Exception as e:
