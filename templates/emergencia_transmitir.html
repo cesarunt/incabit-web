@@ -156,7 +156,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const finalImagen = document.getElementById("final-imagen");
     const btnDescargarImagen = document.getElementById("btn-descargar-imagen");
 
-    const INTERVALO_MS = 2000;
+    const INTERVALO_MS = 1000;
     let DURACION_SEGUNDOS = 30;
     let motorActual = "gpu"; // "gpu" o "cpu"
 
@@ -249,9 +249,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         conteoPersonas.textContent = 0;
         conteoVehiculos.textContent = 0;
-
-        const perros = document.getElementById("conteo-perros");
-        if (perros) perros.textContent = 0;
+        conteoPerros.textContent = 0;
 
         if (listaDetecciones) {
             listaDetecciones.innerHTML = "";
@@ -427,7 +425,27 @@ document.addEventListener("DOMContentLoaded", function () {
             // 2. Dibujar en vivo
             dibujarDetecciones(listaObjetos);
 
-            // ... (lógica de conteo de personas/vehículos/perros)
+            let personas = 0;
+            let vehiculos = 0;
+            let perros = 0;
+
+            if (data.conteo) {
+                personas = data.conteo["person"] || 0;
+                vehiculos =
+                    (data.conteo["car"] || 0) +
+                    (data.conteo["motorcycle"] || 0) +
+                    (data.conteo["bus"] || 0) +
+                    (data.conteo["truck"] || 0);
+                perros = data.conteo["dog"] || 0;
+            }
+
+            conteoPersonas.textContent = personas;
+            conteoVehiculos.textContent = vehiculos;
+            conteoPerros.textContent = perros;
+
+            ultimoResumen.person = personas;
+            ultimoResumen.vehiculos = vehiculos;
+            ultimoResumen.dog = perros;
 
             const totalObjetos = personas + vehiculos + perros;
             if (totalObjetos > mejorConteo.total) {
@@ -551,9 +569,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Resetear contadores visuales
         conteoPersonas.textContent = "0";
         conteoVehiculos.textContent = "0";
-        if (document.getElementById("conteo-perros")) {
-            document.getElementById("conteo-perros").textContent = "0";
-        }
+        conteoPerros.textContent = "0";
 
         iniciando = true;
         btnIniciarPrincipal.disabled = true;
