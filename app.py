@@ -265,16 +265,15 @@ def procesar_frame_yolo_desde_base64(data_url: str):
         if result.boxes is not None:
             names = result.names
             for box in result.boxes:
+                coords = box.xyxy[0].tolist() # [x1, y1, x2, y2]
                 cls_id = int(box.cls[0].item())
-                conf = float(box.conf[0].item())
-
-                if conf >= YOLO_CONFIDENCE:
-                    clase = names[cls_id]
-                    detecciones.append({
-                        "clase": clase,
-                        "confianza": round(conf, 3)
-                    })
-                    conteo[clase] = conteo.get(clase, 0) + 1
+                clase = names[cls_id]
+                detecciones.append({
+                    "clase": names[cls_id],
+                    "confianza": round(float(box.conf[0].item()), 2),
+                    "bbox": coords # <-- Sin esto, el celular no sabe dónde dibujar
+                })
+                conteo[clase] = conteo.get(clase, 0) + 1
 
         ok, buffer = cv2.imencode(".jpg", annotated)
         if not ok:
@@ -291,9 +290,9 @@ def procesar_frame_yolo_desde_base64(data_url: str):
         # })
         return {
             "ok": True,
-            "detecciones": detecciones,
+            "objects": detecciones, # <-- Aquí está el secreto
             "conteo": conteo,
-            "imagen_procesada": data_url # Para que el JS pueda guardarla
+            "imagen_procesada": data_url
         }
 
     except Exception as e:
