@@ -188,36 +188,48 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function dibujarDetecciones(detecciones) {
-        // 1. Sincronizar tamaño del canvas con el tamaño visual del video
+        // 1. Sincronización forzada de dimensiones
         canvasDeteccion.width = video.videoWidth;
         canvasDeteccion.height = video.videoHeight;
 
-        // 2. Limpiar dibujos previos
+        // 2. Limpieza total para evitar "fantasmas"
         ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
 
-        // 3. Factor de escala dinámica
-        // RunPod siempre procesa sobre una base de 640px (imgsz)
-        // Debemos detectar si el video es vertical u horizontal
-        const baseScale = 640;
-        const scaleX = video.videoWidth / baseScale;
-        const scaleY = video.videoHeight / baseScale;
+        if (!detecciones || detecciones.length === 0) return;
+
+        // 3. Cálculo de Escala Real (YOLO 11 usa base 640)
+        // El celular en vertical envía una imagen donde el ancho es menor al alto.
+        const scaleX = video.videoWidth / 640;
+        const scaleY = video.videoHeight / 640;
 
         detecciones.forEach(obj => {
-            // Ajustar coordenadas a la pantalla real del celular
-            // Usamos scaleX para X y scaleY para Y para corregir el estiramiento en celular
-            const x1 = obj.bbox[0] * scaleX;
-            const y1 = obj.bbox[1] * scaleY;
-            const x2 = obj.bbox[2] * scaleX;
-            const y2 = obj.bbox[3] * scaleY;
+            const [x1, y1, x2, y2] = obj.bbox;
+            
+            // Ajuste de coordenadas con escala asimétrica
+            const rx1 = x1 * scaleX;
+            const ry1 = y1 * scaleY;
+            const rx2 = x2 * scaleX;
+            const ry2 = y2 * scaleY;
+            const width = rx2 - rx1;
+            const height = ry2 - ry1;
 
             const color = (obj.clase === 'person') ? "#00FF00" : "#00AAFF";
+            const porcentaje = Math.round(obj.confianza * 100);
+
+            // 4. Dibujar el Cuadro
             ctx.strokeStyle = color;
             ctx.lineWidth = 4;
-            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+            ctx.strokeRect(rx1, ry1, width, height);
 
+            // 5. Dibujar Etiqueta con Fondo (para legibilidad)
             ctx.fillStyle = color;
+            const texto = `${obj.clase} ${porcentaje}%`;
+            const textWidth = ctx.measureText(texto).width;
+            
+            ctx.fillRect(rx1, ry1 - 25, textWidth + 10, 25);
+            ctx.fillStyle = "black";
             ctx.font = "bold 16px Arial";
-            ctx.fillText(`${obj.clase}`, x1, y1 > 20 ? y1 - 5 : y1 + 15);
+            ctx.fillText(texto, rx1 + 5, ry1 - 7);
         });
     }
 
@@ -375,7 +387,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const tCtx = tempCanvas.getContext("2d");
         ctx.drawImage(video, 0, 0, canvasDeteccion.width, canvasDeteccion.height);
 
-        const frameData = canvasDeteccion.toDataURL("image/jpeg", 0.75);
+        const frameData = canvasDeteccion.toDataURL("image/jpeg", 0.7);
 
         fetch("/api/emergencia/procesar-frame", {
             method: "POST",
@@ -428,33 +440,40 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 // FUSIONAR: Creamos un canvas temporal para combinar foto + cuadros
                 const canvasFinal = document.createElement("canvas");
-                canvasFinal.width = canvasDeteccion.width;
-                canvasFinal.height = canvasDeteccion.height;
+                canvasFinal.width = video.videoWidth;
+                canvasFinal.height = video.videoHeight;
                 const tempCtx = canvasFinal.getContext("2d");
 
                 // 1. Dibujar la imagen original (el fondo)
                 tempCtx.drawImage(video, 0, 0, canvasFinal.width, canvasFinal.height);
 
+                const sX = video.videoWidth / 640;
+                const sY = video.videoHeight / 640;
+
                 // 2. Dibujar cuadros (mismo bucle que ya tienes)
                 data.detecciones.forEach(obj => {
                     const [x1, y1, x2, y2] = obj.bbox;
-                    tempCtx.strokeStyle = (obj.clase === 'person') ? "#00FF00" : "#00AAFF";
-                    tempCtx.lineWidth = 4;
-                    tempCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                    const color = (obj.clase === 'person') ? "#00FF00" : "#00AAFF";
+                    const etiqueta = `${obj.clase} ${Math.round(obj.confianza * 100)}%`;
+
+                    tempCtx.strokeStyle = color;
+                    tempCtx.lineWidth = 5;
+                    tempCtx.strokeRect(x1 * sX, y1 * sY, (x2 - x1) * sX, (y2 - y1) * sY);
+
+                    // Etiqueta en la foto descargada
+                    tempCtx.fillStyle = color;
+                    tempCtx.font = "bold 22px Arial";
+                    tempCtx.fillText(etiqueta, (x1 * sX) + 5, (y1 * sY) - 10);
                 });
 
-                // 3. ESTAMPAR FECHA Y HORA (Watermark)
-                const ahora = new Date();
-                const textoFecha = ahora.toLocaleString('es-PE', { timeZone: 'America/Lima' });
+                // Estampar Fecha y Hora Final
+                const fechaLocal = new Date().toLocaleString('es-PE');
                 tempCtx.fillStyle = "white";
-                tempCtx.shadowColor = "black";
-                tempCtx.shadowBlur = 7;
-                tempCtx.font = "bold 20px Arial";
-                // Posición: Esquina inferior derecha
-                tempCtx.fillText(textoFecha, canvasFinal.width - 250, canvasFinal.height - 20);
+                tempCtx.font = "bold 24px Arial";
+                tempCtx.fillText(fechaLocal, 20, canvasFinal.height - 30);
 
                 // 4. Guardar esta versión "combinada" como la mejor para el resumen
-                mejorFrameProcesado = canvasFinal.toDataURL("image/jpeg", 0.85);
+                mejorFrameProcesado = canvasFinal.toDataURL("image/jpeg", 0.9);
             }
 
             if (listaDetecciones) {
