@@ -307,7 +307,7 @@ def procesar_y_detectar(frame_original):
             "Content-Type": "application/json"
         }
 
-        response = requests.post(RUNPOD_URL, json=payload, headers=headers, timeout=20)
+        response = requests.post(RUNPOD_URL, json=payload, headers=headers, timeout=25)
         
         if response.status_code == 200:
             res_json = response.json()

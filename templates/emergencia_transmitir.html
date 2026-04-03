@@ -195,30 +195,29 @@ document.addEventListener("DOMContentLoaded", function () {
         // 2. Limpiar dibujos previos
         ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
 
-        // 3. Factor de escala: RunPod procesó a 640px de ancho
-        // Necesitamos ajustar las coordenadas si el video es más grande o pequeño
-        const scaleX = video.videoWidth / 640;
-        // Calculamos scaleY basado en la misma proporción para no deformar
-        const scaleY = video.videoHeight / (video.videoHeight * (640 / video.videoWidth));
+        // 3. Factor de escala dinámica
+        // RunPod siempre procesa sobre una base de 640px (imgsz)
+        // Debemos detectar si el video es vertical u horizontal
+        const baseScale = 640;
+        const scaleX = video.videoWidth / baseScale;
+        const scaleY = video.videoHeight / baseScale;
 
         detecciones.forEach(obj => {
             // Ajustar coordenadas a la pantalla real del celular
+            // Usamos scaleX para X y scaleY para Y para corregir el estiramiento en celular
             const x1 = obj.bbox[0] * scaleX;
-            const y1 = obj.bbox[1] * scaleX; // Usamos scaleX para mantener proporción
+            const y1 = obj.bbox[1] * scaleY;
             const x2 = obj.bbox[2] * scaleX;
-            const y2 = obj.bbox[3] * scaleX;
+            const y2 = obj.bbox[3] * scaleY;
 
             const color = (obj.clase === 'person') ? "#00FF00" : "#00AAFF";
-
-            // Dibujar Rectángulo
             ctx.strokeStyle = color;
             ctx.lineWidth = 4;
             ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
 
-            // Dibujar Etiqueta
             ctx.fillStyle = color;
             ctx.font = "bold 16px Arial";
-            ctx.fillText(`${obj.clase} ${Math.round(obj.confianza * 100)}%`, x1, y1 > 20 ? y1 - 5 : y1 + 15);
+            ctx.fillText(`${obj.clase}`, x1, y1 > 20 ? y1 - 5 : y1 + 15);
         });
     }
 
@@ -359,20 +358,21 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function capturarFrame() {
-        if (!video.videoWidth || !video.videoHeight || procesando || !transmisionActiva) {
+        if (!video.videoWidth || procesando || !transmisionActiva) {
             return;
         }
 
         procesando = true;
         estadoProceso.textContent = `Procesando ... Tiempo restante: ${segundosRestantes}s`;
 
-        const maxWidth = 640;
-        const scale = maxWidth / video.videoWidth;
+        // Crear un canvas temporal ajustado a la realidad del sensor del celular
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = 640;
+        // Mantenemos la proporción real (vertical u horizontal)
+        const aspect = video.videoHeight / video.videoWidth;
+        tempCanvas.height = 640 * aspect;
 
-        canvasDeteccion.width = maxWidth;
-        canvasDeteccion.height = Math.round(video.videoHeight * scale);
-
-        const ctx = canvasDeteccion.getContext("2d");
+        const tCtx = tempCanvas.getContext("2d");
         ctx.drawImage(video, 0, 0, canvasDeteccion.width, canvasDeteccion.height);
 
         const frameData = canvasDeteccion.toDataURL("image/jpeg", 0.75);
@@ -518,6 +518,12 @@ document.addEventListener("DOMContentLoaded", function () {
     btnIniciarPrincipal.addEventListener("click", async function () {
         if (transmisionActiva || iniciando) return;
 
+        // RESET DE ESTADOS DE CONTROL
+        procesando = false; 
+        transmisionActiva = false;
+        if (intervalId) clearInterval(intervalId);
+        if (countdownId) clearInterval(countdownId);
+
         // --- LIMPIEZA TOTAL PARA NUEVA TRANSMISIÓN ---
         mejorFrameProcesado = null;
         finalImagen.src = ""; // Limpia la imagen pegada
@@ -617,6 +623,8 @@ document.addEventListener("DOMContentLoaded", function () {
             // placeholderResultado.style.display = "flex";
             // resultadoImagen.style.display = "none";
 
+            // Solo activamos esto una vez que la cámara y el servidor respondan
+            transmisionActiva = true; 
             capturarFrame();
             intervalId = setInterval(capturarFrame, INTERVALO_MS);
             iniciarContador();
