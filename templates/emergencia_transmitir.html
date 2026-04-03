@@ -156,7 +156,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const finalImagen = document.getElementById("final-imagen");
     const btnDescargarImagen = document.getElementById("btn-descargar-imagen");
 
-    const INTERVALO_MS = 1000;
+    const INTERVALO_MS = 2000;
     let DURACION_SEGUNDOS = 30;
     let motorActual = "gpu"; // "gpu" o "cpu"
 
@@ -392,9 +392,10 @@ document.addEventListener("DOMContentLoaded", function () {
         tempCanvas.height = 640 * aspect;
 
         const tCtx = tempCanvas.getContext("2d");
-        ctx.drawImage(video, 0, 0, canvasDeteccion.width, canvasDeteccion.height);
-
-        const frameData = canvasDeteccion.toDataURL("image/jpeg", 0.7);
+        // Dibujamos el video en el canvas temporal LIMPIO
+        tCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+        // Extraemos la imagen del canvas limpio para enviarla a Render/RunPod
+        const frameData = tempCanvas.toDataURL("image/jpeg", 0.75);
 
         // ELEGIR ENDPOINT
         const endpoint = (motorActual === "gpu") 
@@ -415,9 +416,16 @@ document.addEventListener("DOMContentLoaded", function () {
         // })
         .then(res => res.json())
         .then(data => {
-            if (!data.ok) return;
+            if (!data.ok) {
+                procesando = false;
+                return;
+            }
 
-            dibujarDetecciones(data.detecciones);
+            // 1. IMPORTANTE: Usamos 'objects' que es lo que envían ambos motores
+            const listaObjetos = data.objects || [];
+            
+            // 2. Dibujar los cuadros en el celular
+            dibujarDetecciones(listaObjetos);
                         
             let personas = 0;
             let vehiculos = 0;
@@ -425,35 +433,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (data.conteo) {
                 personas = data.conteo["person"] || 0;
-
-                vehiculos =
-                    (data.conteo["car"] || 0) +
-                    (data.conteo["motorcycle"] || 0) +
-                    (data.conteo["bus"] || 0) +
-                    (data.conteo["truck"] || 0);
-
+                vehiculos = (data.conteo["car"] || 0) + (data.conteo["motorcycle"] || 0) +
+                            (data.conteo["bus"] || 0) + (data.conteo["truck"] || 0);
                 perros = data.conteo["dog"] || 0;
             }
 
+            // Actualizar UI
             conteoPersonas.textContent = personas;
             conteoVehiculos.textContent = vehiculos;
-            if (document.getElementById("conteo-perros")) {
-                document.getElementById("conteo-perros").textContent = perros;
-            }
+            if (conteoPerros) conteoPerros.textContent = perros;
 
             ultimoResumen.person = personas;
             ultimoResumen.vehiculos = vehiculos;
             ultimoResumen.dog = perros;
 
+            // Lógica para el resumen de la mejor imagen
             const totalObjetos = personas + vehiculos + perros;
-
             if (totalObjetos > mejorConteo.total) {
-                mejorConteo = {
-                    person: personas,
-                    vehiculos: vehiculos,
-                    dog: perros,
-                    total: totalObjetos
-                };
+                mejorConteo = { person: personas, vehiculos: vehiculos, dog: perros, total: totalObjetos };
+                
+                // Esta función ahora usa 'listaObjetos' para fusionar la imagen de descarga
+                // actualizarMejorFrameParaDescarga(listaObjetos); 
 
                 // FUSIONAR: Creamos un canvas temporal para combinar foto + cuadros
                 const canvasFinal = document.createElement("canvas");
@@ -490,7 +490,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 tempCtx.fillText(fechaLocal, 20, canvasFinal.height - 30);
 
                 // 4. Guardar esta versión "combinada" como la mejor para el resumen
-                mejorFrameProcesado = canvasFinal.toDataURL("image/jpeg", 0.9);
+                mejorFrameProcesado = canvasFinal.toDataURL("image/jpeg", 0.75);
+
             }
 
             if (listaDetecciones) {

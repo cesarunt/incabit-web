@@ -275,23 +275,27 @@ def procesar_frame_yolo_desde_base64(data_url: str):
                 })
                 conteo[clase] = conteo.get(clase, 0) + 1
 
-        ok, buffer = cv2.imencode(".jpg", annotated)
-        if not ok:
-            return {"ok": False, "error": "No se pudo codificar la imagen procesada"}
+        # ok, buffer = cv2.imencode(".jpg", annotated)
+        # if not ok:
+        #     return {"ok": False, "error": "No se pudo codificar la imagen procesada"}
 
         # annotated_base64 = base64.b64encode(buffer).decode("utf-8")
         # annotated_data_url = f"data:image/jpeg;base64,{annotated_base64}"
 
-        # return jsonify({
-        #     "ok": True,
-        #     "imagen_procesada": annotated_data_url,
-        #     "detecciones": detecciones,
-        #     "conteo": conteo
-        # })
+        # 1. Asegúrate de que el diccionario de conteo tenga las llaves correctas
+        conteo_formateado = {
+            "person": conteo.get("person", 0),
+            "car": conteo.get("car", 0),
+            "motorcycle": conteo.get("motorcycle", 0),
+            "bus": conteo.get("bus", 0),
+            "truck": conteo.get("truck", 0),
+            "dog": conteo.get("dog", 0)
+        }
+
         return {
             "ok": True,
             "objects": detecciones, # <-- Aquí está el secreto
-            "conteo": conteo,
+            "conteo": conteo_formateado,
             "imagen_procesada": data_url
         }
 
