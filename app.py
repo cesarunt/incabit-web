@@ -280,15 +280,21 @@ def procesar_frame_yolo_desde_base64(data_url: str):
         if not ok:
             return {"ok": False, "error": "No se pudo codificar la imagen procesada"}
 
-        annotated_base64 = base64.b64encode(buffer).decode("utf-8")
-        annotated_data_url = f"data:image/jpeg;base64,{annotated_base64}"
+        # annotated_base64 = base64.b64encode(buffer).decode("utf-8")
+        # annotated_data_url = f"data:image/jpeg;base64,{annotated_base64}"
 
-        return jsonify({
+        # return jsonify({
+        #     "ok": True,
+        #     "imagen_procesada": annotated_data_url,
+        #     "detecciones": detecciones,
+        #     "conteo": conteo
+        # })
+        return {
             "ok": True,
-            "imagen_procesada": annotated_data_url,
             "detecciones": detecciones,
-            "conteo": conteo
-        })
+            "conteo": conteo,
+            "imagen_procesada": data_url # Para que el JS pueda guardarla
+        }
 
     except Exception as e:
         return {"ok": False, "error": str(e)}
@@ -509,22 +515,19 @@ def api_finalizar_transmision():
 @app.route("/api/emergencia/procesar-frame-cpu", methods=["POST"])
 def api_procesar_frame_cpu():
     control = liberar_transmision_si_expirada()
-
     if control.estado != "activa":
-        return jsonify({
-            "ok": False,
-            "error": "No hay una transmisión activa autorizada."
-        }), 403
+        return jsonify({"ok": False, "error": "No hay una transmisión activa"}), 403
 
     data = request.get_json(silent=True) or {}
     frame_data = data.get("frame")
 
-    if not frame_data:
-        return jsonify({"ok": False, "error": "No se recibió ningún frame"}), 400
-
+    # LLAMADA CORREGIDA:
+    # Asegúrate de que procesar_frame_yolo_desde_base64 devuelva un DICCIONARIO, 
+    # no un jsonify().
     resultado = procesar_frame_yolo_desde_base64(frame_data)
 
-    if not resultado["ok"]:
+    # Si resultado ya es un diccionario, esto funcionará:
+    if not resultado.get("ok"):
         return jsonify(resultado), 400
 
     return jsonify(resultado)
