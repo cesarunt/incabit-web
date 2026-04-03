@@ -8,7 +8,8 @@
 
         <!-- Estado inicial -->
         <div id="bloque-inicial" class="hero-actions" style="margin: 24px auto; display: block !important; text-align: center;">
-            <button type="button" class="btn" id="btn-iniciar-principal">Iniciar Transmisión</button>
+            <button type="button" class="btn" id="btn-iniciar-gpu" style="width: 190px;">Iniciar Transmisión GPU (runpod)</button>
+            <button type="button" class="btn btn-secondary" id="btn-iniciar-cpu" style="width: 190px;">Iniciar Transmisión CPU (render)</button>
         </div>
 
         <!-- Mensaje final -->
@@ -126,7 +127,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const mensajeFinal = document.getElementById("mensaje-final");
     const panelTransmision = document.getElementById("panel-transmision");
 
-    const btnIniciarPrincipal = document.getElementById("btn-iniciar-principal");
+    const btnIniciarPrincipal = document.getElementById("btn-iniciar-gpu");
+    const btnIniciarxCPU = document.getElementById("btn-iniciar-cpu")
     const btnDetener = document.getElementById("btn-detener");
 
     const video = document.getElementById("video");
@@ -156,6 +158,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const INTERVALO_MS = 1000;
     let DURACION_SEGUNDOS = 30;
+    let motorActual = "gpu"; // "gpu" o "cpu"
 
     let stream = null;
     let iniciando = false;
@@ -336,6 +339,8 @@ document.addEventListener("DOMContentLoaded", function () {
         iniciando = false;
         btnIniciarPrincipal.disabled = false;
         btnIniciarPrincipal.style.opacity = "1";
+        btnIniciarxCPU.disabled = false;
+        btnIniciarxCPU.style.opacity = "1";
     }
 
     async function iniciarCamara() {
@@ -391,13 +396,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const frameData = canvasDeteccion.toDataURL("image/jpeg", 0.7);
 
-        fetch("/api/emergencia/procesar-frame", {
+        // ELEGIR ENDPOINT
+        const endpoint = (motorActual === "gpu") 
+            ? "/api/emergencia/procesar-frame" 
+            : "/api/emergencia/procesar-frame-cpu";
+        fetch(endpoint, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ frame: frameData })
         })
+
+        // fetch("/api/emergencia/procesar-frame", {
+        //     method: "POST",
+        //     headers: {
+        //         "Content-Type": "application/json"
+        //     },
+        //     body: JSON.stringify({ frame: frameData })
+        // })
         .then(res => res.json())
         .then(data => {
             if (!data.ok) return;
@@ -534,10 +549,16 @@ document.addEventListener("DOMContentLoaded", function () {
         return `img_detected_${yyyy}${mm}${dd}_${hh}${min}${ss}.jpg`;
     }
 
+    // Ahora los botones solo llaman a la función principal
+    btnIniciarPrincipal.addEventListener("click", () => iniciarFlujoTransmision("gpu"));
+    btnIniciarxCPU.addEventListener("click", () => iniciarFlujoTransmision("cpu"));
 
-    // Click on button "Iniciar Transmisión"
-    btnIniciarPrincipal.addEventListener("click", async function () {
+    // Función genérica que contiene toda la lógica que ya tenías
+    async function iniciarFlujoTransmision(motor) {
         if (transmisionActiva || iniciando) return;
+
+        motorActual = motor; // Guardamos la elección
+        console.log("Iniciando transmisión vía:", motorActual);
 
         // RESET DE ESTADOS DE CONTROL
         procesando = false; 
@@ -565,6 +586,8 @@ document.addEventListener("DOMContentLoaded", function () {
         iniciando = true;
         btnIniciarPrincipal.disabled = true;
         btnIniciarPrincipal.style.opacity = "0.6";
+        btnIniciarxCPU.disabled = true;
+        btnIniciarxCPU.style.opacity = "0.6";
         mensajeFinal.style.display = "none";
 
         mejorFrameProcesado = null;
@@ -615,6 +638,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 iniciando = false;
                 btnIniciarPrincipal.disabled = false;
                 btnIniciarPrincipal.style.opacity = "1";
+                btnIniciarxCPU.disabled = false;
+                btnIniciarxCPU.style.opacity = "1";
                 return;
             }
 
@@ -632,6 +657,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 iniciando = false;
                 btnIniciarPrincipal.disabled = false;
                 btnIniciarPrincipal.style.opacity = "1";
+                btnIniciarxCPU.disabled = false;
+                btnIniciarxCPU.style.opacity = "1";
                 return;
             }
 
@@ -664,8 +691,10 @@ document.addEventListener("DOMContentLoaded", function () {
             iniciando = false;
             btnIniciarPrincipal.disabled = false;
             btnIniciarPrincipal.style.opacity = "1";
+            btnIniciarxCPU.disabled = false;
+            btnIniciarxCPU.style.opacity = "1";
         }
-    });
+    };
 
     btnDetener.addEventListener("click", function () {
         if (!transmisionActiva && !stream) {

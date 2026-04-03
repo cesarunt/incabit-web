@@ -229,69 +229,69 @@ def get_yolo_model():
     return yolo_model
 
 
-# def procesar_frame_yolo_desde_base64(data_url: str):
-#     """
-#     Recibe una imagen base64 (data:image/jpeg;base64,...)
-#     y devuelve imagen anotada + detecciones + conteo.
-#     """
-#     try:
-#         if "," not in data_url:
-#             return {"ok": False, "error": "Formato de imagen inválido"}
+def procesar_frame_yolo_desde_base64(data_url: str):
+    """
+    Recibe una imagen base64 (data:image/jpeg;base64,...)
+    y devuelve imagen anotada + detecciones + conteo.
+    """
+    try:
+        if "," not in data_url:
+            return {"ok": False, "error": "Formato de imagen inválido"}
 
-#         _, encoded = data_url.split(",", 1)
-#         image_bytes = base64.b64decode(encoded)
-#         np_array = np.frombuffer(image_bytes, np.uint8)
-#         frame = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
+        _, encoded = data_url.split(",", 1)
+        image_bytes = base64.b64decode(encoded)
+        np_array = np.frombuffer(image_bytes, np.uint8)
+        frame = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
 
-#         if frame is None:
-#             return {"ok": False, "error": "No se pudo decodificar el frame"}
+        if frame is None:
+            return {"ok": False, "error": "No se pudo decodificar el frame"}
 
-#         model = get_yolo_model()
+        model = get_yolo_model()
 
-#         results = model.predict(
-#             source=frame,
-#             conf=YOLO_CONFIDENCE,
-#             classes=YOLO_CLASSES,
-#             imgsz=640,
-#             verbose=False
-#         )
+        results = model.predict(
+            source=frame,
+            conf=YOLO_CONFIDENCE,
+            classes=YOLO_CLASSES,
+            imgsz=640,
+            verbose=False
+        )
 
-#         result = results[0]
-#         annotated = result.plot()
+        result = results[0]
+        annotated = result.plot()
 
-#         detecciones = []
-#         conteo = {}
+        detecciones = []
+        conteo = {}
 
-#         if result.boxes is not None:
-#             names = result.names
-#             for box in result.boxes:
-#                 cls_id = int(box.cls[0].item())
-#                 conf = float(box.conf[0].item())
+        if result.boxes is not None:
+            names = result.names
+            for box in result.boxes:
+                cls_id = int(box.cls[0].item())
+                conf = float(box.conf[0].item())
 
-#                 if conf >= YOLO_CONFIDENCE:
-#                     clase = names[cls_id]
-#                     detecciones.append({
-#                         "clase": clase,
-#                         "confianza": round(conf, 3)
-#                     })
-#                     conteo[clase] = conteo.get(clase, 0) + 1
+                if conf >= YOLO_CONFIDENCE:
+                    clase = names[cls_id]
+                    detecciones.append({
+                        "clase": clase,
+                        "confianza": round(conf, 3)
+                    })
+                    conteo[clase] = conteo.get(clase, 0) + 1
 
-#         ok, buffer = cv2.imencode(".jpg", annotated)
-#         if not ok:
-#             return {"ok": False, "error": "No se pudo codificar la imagen procesada"}
+        ok, buffer = cv2.imencode(".jpg", annotated)
+        if not ok:
+            return {"ok": False, "error": "No se pudo codificar la imagen procesada"}
 
-#         annotated_base64 = base64.b64encode(buffer).decode("utf-8")
-#         annotated_data_url = f"data:image/jpeg;base64,{annotated_base64}"
+        annotated_base64 = base64.b64encode(buffer).decode("utf-8")
+        annotated_data_url = f"data:image/jpeg;base64,{annotated_base64}"
 
-#         return jsonify({
-#             "ok": True,
-#             "imagen_procesada": annotated_data_url,
-#             "detecciones": detecciones,
-#             "conteo": conteo
-#         })
+        return jsonify({
+            "ok": True,
+            "imagen_procesada": annotated_data_url,
+            "detecciones": detecciones,
+            "conteo": conteo
+        })
 
-#     except Exception as e:
-#         return {"ok": False, "error": str(e)}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 def procesar_y_detectar(frame_original):
@@ -505,6 +505,29 @@ def api_finalizar_transmision():
             "error": f"Error al finalizar la transmisión: {str(e)}"
         }), 500
 
+
+@app.route("/api/emergencia/procesar-frame-cpu", methods=["POST"])
+def api_procesar_frame_cpu():
+    control = liberar_transmision_si_expirada()
+
+    if control.estado != "activa":
+        return jsonify({
+            "ok": False,
+            "error": "No hay una transmisión activa autorizada."
+        }), 403
+
+    data = request.get_json(silent=True) or {}
+    frame_data = data.get("frame")
+
+    if not frame_data:
+        return jsonify({"ok": False, "error": "No se recibió ningún frame"}), 400
+
+    resultado = procesar_frame_yolo_desde_base64(frame_data)
+
+    if not resultado["ok"]:
+        return jsonify(resultado), 400
+
+    return jsonify(resultado)
 
 @app.route("/api/emergencia/procesar-frame", methods=["POST"])
 def api_procesar_frame():
