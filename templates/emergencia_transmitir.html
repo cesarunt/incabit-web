@@ -19,12 +19,16 @@
         </div>
 
         <div id="resultado-final" style="display:none; margin-top: 24px;">
-            <article class="card">
-                <h4>Resumen - Elementos detectados</h4>
-                <div id="final-resumen-items" style="margin-top: 16px; font-size: 1.05rem; line-height: 1.9;">
+            <article class="card" style="text-align: center;">
+                <h4>Elementos detectados</h4>
+                <div id="final-resumen-items" style="margin-top: 16px;">
                     <div id="fila-final-personas">Personas: <b id="final-personas">0</b></div>
                     <div id="fila-final-vehiculos">Vehículos: <b id="final-vehiculos">0</b></div>
                     <div id="fila-final-perros">Perros: <b id="final-perros">0</b></div>
+                </div>
+
+                <div style="margin-top: 12px; text-align: center;">
+                    <p>👤 = <b id="conteo-personas">0</b> &nbsp;&nbsp; 🚗 = <b id="conteo-vehiculos">0</b> &nbsp;&nbsp; 🐶 = <b id="conteo-perros">0</b></p>
                 </div>
 
                 <div style="margin-top: 22px;">
@@ -83,7 +87,6 @@
             </div>
 
             <div style="margin-top: 12px; text-align: center;">
-                <!-- <h4>Resumen</h4> -->
                 <p>👤 = <b id="conteo-personas">0</b> &nbsp;&nbsp; 🚗 = <b id="conteo-vehiculos">0</b> &nbsp;&nbsp; 🐶 = <b id="conteo-perros">0</b></p>
             </div>
 
@@ -319,7 +322,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (mejorFrameProcesado) {
             finalImagen.src = mejorFrameProcesado;
             finalImagen.style.display = "block";
-            finalImagen.style.width = "100%"; // Para que no se desborde en el resumen
             
             btnDescargarImagen.href = mejorFrameProcesado;
             btnDescargarImagen.style.display = "inline-flex";
