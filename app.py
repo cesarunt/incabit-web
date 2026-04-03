@@ -294,9 +294,9 @@ def procesar_frame_yolo_desde_base64(data_url: str):
 
         return {
             "ok": True,
-            "objects": detecciones, # <-- Aquí está el secreto
+            "objects": detecciones,
             "conteo": conteo_formateado,
-            "imagen_procesada": data_url
+            "imagen_procesada": data_url # ASEGÚRATE de que esta línea exista
         }
 
     except Exception as e:
@@ -591,7 +591,7 @@ def api_procesar_frame():
         return jsonify({
             "ok": True,
             "imagen_procesada": frame_data,
-            "detecciones": result.get("objects", []),
+            "objects": result.get("objects", []), # CAMBIA 'detecciones' por 'objects'
             "conteo": conteo_formateado
         })
 

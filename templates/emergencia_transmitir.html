@@ -421,77 +421,48 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            // 1. IMPORTANTE: Usamos 'objects' que es lo que envían ambos motores
-            const listaObjetos = data.objects || [];
+            // 1. Unificar la fuente de datos: priorizar 'objects'
+            const listaObjetos = data.objects || data.detecciones || [];
             
-            // 2. Dibujar los cuadros en el celular
+            // 2. Dibujar en vivo
             dibujarDetecciones(listaObjetos);
-                        
-            let personas = 0;
-            let vehiculos = 0;
-            let perros = 0;
 
-            if (data.conteo) {
-                personas = data.conteo["person"] || 0;
-                vehiculos = (data.conteo["car"] || 0) + (data.conteo["motorcycle"] || 0) +
-                            (data.conteo["bus"] || 0) + (data.conteo["truck"] || 0);
-                perros = data.conteo["dog"] || 0;
-            }
+            // ... (lógica de conteo de personas/vehículos/perros)
 
-            // Actualizar UI
-            conteoPersonas.textContent = personas;
-            conteoVehiculos.textContent = vehiculos;
-            if (conteoPerros) conteoPerros.textContent = perros;
-
-            ultimoResumen.person = personas;
-            ultimoResumen.vehiculos = vehiculos;
-            ultimoResumen.dog = perros;
-
-            // Lógica para el resumen de la mejor imagen
             const totalObjetos = personas + vehiculos + perros;
             if (totalObjetos > mejorConteo.total) {
                 mejorConteo = { person: personas, vehiculos: vehiculos, dog: perros, total: totalObjetos };
                 
-                // Esta función ahora usa 'listaObjetos' para fusionar la imagen de descarga
-                // actualizarMejorFrameParaDescarga(listaObjetos); 
-
-                // FUSIONAR: Creamos un canvas temporal para combinar foto + cuadros
+                // FUSIONAR PARA EL RESUMEN FINAL
+                // Usamos 'listaObjetos' para que funcione con CPU y GPU
                 const canvasFinal = document.createElement("canvas");
                 canvasFinal.width = video.videoWidth;
                 canvasFinal.height = video.videoHeight;
                 const tempCtx = canvasFinal.getContext("2d");
 
-                // 1. Dibujar la imagen original (el fondo)
                 tempCtx.drawImage(video, 0, 0, canvasFinal.width, canvasFinal.height);
 
                 const sX = video.videoWidth / 640;
                 const sY = video.videoHeight / 640;
 
-                // 2. Dibujar cuadros (mismo bucle que ya tienes)
-                data.detecciones.forEach(obj => {
+                listaObjetos.forEach(obj => {
                     const [x1, y1, x2, y2] = obj.bbox;
                     const color = (obj.clase === 'person') ? "#00FF00" : "#00AAFF";
-                    const etiqueta = `${obj.clase} ${Math.round(obj.confianza * 100)}%`;
-
                     tempCtx.strokeStyle = color;
                     tempCtx.lineWidth = 5;
                     tempCtx.strokeRect(x1 * sX, y1 * sY, (x2 - x1) * sX, (y2 - y1) * sY);
-
-                    // Etiqueta en la foto descargada
+                    
                     tempCtx.fillStyle = color;
                     tempCtx.font = "bold 22px Arial";
-                    tempCtx.fillText(etiqueta, (x1 * sX) + 5, (y1 * sY) - 10);
+                    tempCtx.fillText(`${obj.clase} ${Math.round(obj.confianza * 100)}%`, (x1 * sX) + 5, (y1 * sY) - 10);
                 });
 
-                // Estampar Fecha y Hora Final
                 const fechaLocal = new Date().toLocaleString('es-PE');
                 tempCtx.fillStyle = "white";
                 tempCtx.font = "bold 24px Arial";
                 tempCtx.fillText(fechaLocal, 20, canvasFinal.height - 30);
 
-                // 4. Guardar esta versión "combinada" como la mejor para el resumen
                 mejorFrameProcesado = canvasFinal.toDataURL("image/jpeg", 0.75);
-
             }
 
             if (listaDetecciones) {
