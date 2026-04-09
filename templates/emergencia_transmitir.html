@@ -9,7 +9,7 @@
         <!-- Estado inicial -->
         <div id="bloque-inicial" class="hero-actions" style="margin: 24px auto; display: block !important; text-align: center;">
             <!-- <button type="button" class="btn" id="btn-iniciar-gpu" style="width: 190px;">Iniciar Transmisión GPU (runpod)</button> -->
-            <button type="button" class="btn" id="btn-iniciar-openvino" style="width: 190px;">Transmitir con OpenVINO (Local)</button>
+            <button type="button" class="btn" id="btn-iniciar-openvino" style="width: 190px;">Transmitir con OpenVINO</button>
             <button type="button" class="btn btn-secondary" id="btn-iniciar-ultralytics" style="width: 190px;">Transmitir con Ultralytics</button>
         </div>
 
@@ -208,7 +208,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         detecciones.forEach(obj => {
             const [x1, y1, x2, y2] = obj.bbox;
-            
+            // CORRECCIÓN: Mapeo de color para español o inglés
+            const esPersona = (obj.clase === 'persona' || obj.clase === 'person');
+            const color = esPersona ? "#00FF00" : "#00AAFF";
+
             // Ajuste de coordenadas con escala asimétrica
             const rx1 = x1 * scaleX;
             const ry1 = y1 * scaleY;
@@ -217,23 +220,20 @@ document.addEventListener("DOMContentLoaded", function () {
             const width = rx2 - rx1;
             const height = ry2 - ry1;
 
-            const color = (obj.clase === 'person') ? "#00FF00" : "#00AAFF";
-            const porcentaje = Math.round(obj.confianza * 100);
+            // const color = (obj.clase === 'person') ? "#00FF00" : "#00AAFF";
+            // const porcentaje = Math.round(obj.confianza * 100);
 
             // 4. Dibujar el Cuadro
             ctx.strokeStyle = color;
             ctx.lineWidth = 4;
-            ctx.strokeRect(rx1, ry1, width, height);
+            ctx.strokeRect(rx1, ry1, rx2 - rx1, ry2 - ry1);
 
             // 5. Dibujar Etiqueta con Fondo (para legibilidad)
             ctx.fillStyle = color;
-            const texto = `${obj.clase} ${porcentaje}%`;
-            const textWidth = ctx.measureText(texto).width;
-            
-            ctx.fillRect(rx1, ry1 - 25, textWidth + 10, 25);
-            ctx.fillStyle = "black";
+            const texto = `${obj.clase.toUpperCase()} ${Math.round(obj.confianza * 100)}%`;
             ctx.font = "bold 16px Arial";
             ctx.fillText(texto, rx1 + 5, ry1 - 7);
+            
         });
     }
 

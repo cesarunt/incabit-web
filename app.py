@@ -603,6 +603,7 @@ def api_procesar_frame_openvino():
         detections = results[0].transpose()
 
         boxes, confidences, class_ids = [], [], []
+        # --- DENTRO DE api_procesar_frame_openvino ---
         for row in detections:
             scores = row[4:]
             class_id = np.argmax(scores)
@@ -611,8 +612,13 @@ def api_procesar_frame_openvino():
                 nombre = COCO_CLASSES[class_id] if class_id < len(COCO_CLASSES) else "objeto"
                 if nombre in MIS_OBJETIVOS:
                     xc, yc, ww, hh = row[:4]
-                    # Guardamos coordenadas escaladas a 640 para el frontend
-                    boxes.append([int((xc - ww/2)*640), int((yc - hh/2)*640), int(ww*640), int(hh*640)])
+                    # CORRECCIÓN: Eliminamos el *640 porque ya están en escala de píxeles
+                    x1 = int(xc - ww/2)
+                    y1 = int(yc - hh/2)
+                    x2 = int(xc + ww/2)
+                    y2 = int(yc + hh/2)
+                    
+                    boxes.append([x1, y1, x2, y2])
                     confidences.append(float(conf))
                     class_ids.append(int(class_id))
 
