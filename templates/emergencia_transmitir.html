@@ -8,8 +8,9 @@
 
         <!-- Estado inicial -->
         <div id="bloque-inicial" class="hero-actions" style="margin: 24px auto; display: block !important; text-align: center;">
-            <button type="button" class="btn" id="btn-iniciar-gpu" style="width: 190px;">Iniciar Transmisión GPU (runpod)</button>
-            <button type="button" class="btn btn-secondary" id="btn-iniciar-cpu" style="width: 190px;">Iniciar Transmisión CPU (render)</button>
+            <!-- <button type="button" class="btn" id="btn-iniciar-gpu" style="width: 190px;">Iniciar Transmisión GPU (runpod)</button> -->
+            <button type="button" class="btn" id="btn-iniciar-openvino" style="width: 190px;">Transmitir con OpenVINO (Local)</button>
+            <button type="button" class="btn btn-secondary" id="btn-iniciar-ultralytics" style="width: 190px;">Transmitir con Ultralytics</button>
         </div>
 
         <!-- Mensaje final -->
@@ -123,8 +124,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const mensajeFinal = document.getElementById("mensaje-final");
     const panelTransmision = document.getElementById("panel-transmision");
 
-    const btnIniciarPrincipal = document.getElementById("btn-iniciar-gpu");
-    const btnIniciarxCPU = document.getElementById("btn-iniciar-cpu")
+    // const btnIniciarPrincipal = document.getElementById("btn-iniciar-gpu");
+    const btnIniciarOpenVINO = document.getElementById("btn-iniciar-openvino");
+    const btnIniciarUltralytics = document.getElementById("btn-iniciar-ultralytics")
     const btnDetener = document.getElementById("btn-detener");
 
     const video = document.getElementById("video");
@@ -154,7 +156,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const INTERVALO_MS = 1000;
     let DURACION_SEGUNDOS = 30;
-    let motorActual = "gpu"; // "gpu" o "cpu"
+    let motorActual = "ultralytics"; // "openvino" o "ultralytics"
 
     let stream = null;
     let iniciando = false;
@@ -328,10 +330,10 @@ document.addEventListener("DOMContentLoaded", function () {
         limpiarPanel();
 
         iniciando = false;
-        btnIniciarPrincipal.disabled = false;
-        btnIniciarPrincipal.style.opacity = "1";
-        btnIniciarxCPU.disabled = false;
-        btnIniciarxCPU.style.opacity = "1";
+        btnIniciarOpenVINO.disabled = false;
+        btnIniciarOpenVINO.style.opacity = "1";
+        btnIniciarUltralytics.disabled = false;
+        btnIniciarUltralytics.style.opacity = "1";
     }
 
     async function iniciarCamara() {
@@ -389,9 +391,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const frameData = tempCanvas.toDataURL("image/jpeg", 0.75);
 
         // ELEGIR ENDPOINT
-        const endpoint = (motorActual === "gpu") 
-            ? "/api/emergencia/procesar-frame" 
-            : "/api/emergencia/procesar-frame-cpu";
+        const endpoint = (motorActual === "openvino") 
+            ? "/api/emergencia/procesar-frame-openvino" 
+            : "/api/emergencia/procesar-frame-ultralytics";
         fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -533,8 +535,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Ahora los botones solo llaman a la función principal
-    btnIniciarPrincipal.addEventListener("click", () => iniciarFlujoTransmision("gpu"));
-    btnIniciarxCPU.addEventListener("click", () => iniciarFlujoTransmision("cpu"));
+    // btnIniciarPrincipal.addEventListener("click", () => iniciarFlujoTransmision("gpu"));
+    btnIniciarOpenVINO.addEventListener("click", () => iniciarFlujoTransmision("openvino"));
+    btnIniciarUltralytics.addEventListener("click", () => iniciarFlujoTransmision("ultralytics"));
 
     // Función genérica que contiene toda la lógica que ya tenías
     async function iniciarFlujoTransmision(motor) {
@@ -565,10 +568,10 @@ document.addEventListener("DOMContentLoaded", function () {
         conteoPerros.textContent = "0";
 
         iniciando = true;
-        btnIniciarPrincipal.disabled = true;
-        btnIniciarPrincipal.style.opacity = "0.6";
-        btnIniciarxCPU.disabled = true;
-        btnIniciarxCPU.style.opacity = "0.6";
+        btnIniciarOpenVINO.disabled = true;
+        btnIniciarOpenVINO.style.opacity = "0.6";
+        btnIniciarUltralytics.disabled = true;
+        btnIniciarUltralytics.style.opacity = "0.6";
         mensajeFinal.style.display = "none";
 
         mejorFrameProcesado = null;
@@ -617,10 +620,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 iniciando = false;
-                btnIniciarPrincipal.disabled = false;
-                btnIniciarPrincipal.style.opacity = "1";
-                btnIniciarxCPU.disabled = false;
-                btnIniciarxCPU.style.opacity = "1";
+                btnIniciarOpenVINO.disabled = false;
+                btnIniciarOpenVINO.style.opacity = "1";
+                btnIniciarUltralytics.disabled = false;
+                btnIniciarUltralytics.style.opacity = "1";
                 return;
             }
 
@@ -636,10 +639,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 mostrarEstadoInicial();
                 iniciando = false;
-                btnIniciarPrincipal.disabled = false;
-                btnIniciarPrincipal.style.opacity = "1";
-                btnIniciarxCPU.disabled = false;
-                btnIniciarxCPU.style.opacity = "1";
+                btnIniciarOpenVINO.disabled = false;
+                btnIniciarOpenVINO.style.opacity = "1";
+                btnIniciarUltralytics.disabled = false;
+                btnIniciarUltralytics.style.opacity = "1";
                 return;
             }
 
@@ -670,10 +673,10 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             iniciando = false;
-            btnIniciarPrincipal.disabled = false;
-            btnIniciarPrincipal.style.opacity = "1";
-            btnIniciarxCPU.disabled = false;
-            btnIniciarxCPU.style.opacity = "1";
+            btnIniciarOpenVINO.disabled = false;
+            btnIniciarOpenVINO.style.opacity = "1";
+            btnIniciarUltralytics.disabled = false;
+            btnIniciarUltralytics.style.opacity = "1";
         }
     };
 

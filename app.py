@@ -6,6 +6,7 @@ import numpy as np
 from urllib.parse import quote_plus
 from datetime import datetime, timedelta
 from ultralytics import YOLO
+from openvino import Core
 from werkzeug.utils import secure_filename
 from flask import (
     Flask,
@@ -90,6 +91,42 @@ TRANSMISSION_GRACE_SECONDS = 5
 # =========================================================
 RUNPOD_URL = "https://api.runpod.ai/v2/1cicb4kg8rp3kf/runsync"
 API_KEY = os.getenv("RUNPOD_API_KEY")
+
+# =========================================================
+# CONFIGURACIÓN OPENVINO (Añadir después de la config YOLO)
+# =========================================================
+OV_CORE = None
+OV_MODEL = None
+# Lista completa para evitar IndexError
+COCO_CLASSES = [
+    'persona', 'bicicleta', 'carro', 'moto', 'avion', 'bus', 'tren', 'camion', 'bote', 'semaforo',
+    'hidrante', 'stop', 'parquimetro', 'banca', 'pajaro', 'gato', 'perro', 'caballo', 'oveja', 'vaca',
+    'elefante', 'oso', 'cebra', 'jirafa', 'mochila', 'paraguas', 'cartera', 'corbata', 'maleta', 'frisbee',
+    'skis', 'snowboard', 'pelota', 'cometa', 'bate', 'guante', 'skateboard', 'tabla_surf', 'raqueta', 'botella',
+    'copa', 'taza', 'tenedor', 'cuchillo', 'cuchara', 'tazon', 'banana', 'manzana', 'sandwich', 'naranja',
+    'brócoli', 'zanahoria', 'hot_dog', 'pizza', 'dona', 'pastel', 'silla', 'sofá', 'planta', 'cama',
+    'comedor', 'baño', 'tv', 'laptop', 'mouse', 'control', 'teclado', 'celular', 'microondas', 'horno',
+    'tostadora', 'fregadero', 'refrigerador', 'libro', 'reloj', 'florero', 'tijeras', 'teddy', 'secador', 'cepillo'
+]
+# Filtro específico para Incabit
+MIS_OBJETIVOS = ['persona', 'bicicleta', 'carro', 'moto', 'bus', 'camion', 'perro']
+
+def get_openvino_model():
+    global OV_CORE, OV_MODEL
+    if OV_MODEL is None:
+        try:
+            OV_CORE = Core()
+            # La carpeta debe estar en la raíz de tu proyecto Incabit
+            model_path = os.path.join(os.getcwd(), "yolo11n_openvino_model", "model.xml")
+            if not os.path.exists(model_path):
+                print(f"ERROR: No se encontró el modelo en {model_path}")
+                return None
+            net = OV_CORE.read_model(model=model_path)
+            OV_MODEL = OV_CORE.compile_model(model=net, device_name="CPU")
+            print("Motor OpenVINO cargado exitosamente en Incabit.")
+        except Exception as e:
+            print(f"Error cargando OpenVINO: {e}")
+    return OV_MODEL
 
 # =========================================================
 # MODELOS
@@ -515,7 +552,7 @@ def api_finalizar_transmision():
         }), 500
 
 
-@app.route("/api/emergencia/procesar-frame-cpu", methods=["POST"])
+@app.route("/api/emergencia/procesar-frame-ultralytics", methods=["POST"])
 def api_procesar_frame_cpu():
     control = liberar_transmision_si_expirada()
     if control.estado != "activa":
@@ -535,6 +572,84 @@ def api_procesar_frame_cpu():
 
     return jsonify(resultado)
 
+
+# =========================================================
+# NUEVA RUTA API PARA OPENVINO
+# =========================================================
+@app.route("/api/emergencia/procesar-frame-openvino", methods=["POST"])
+def api_procesar_frame_openvino():
+    model = get_openvino_model()
+    if not model:
+        return jsonify({"ok": False, "error": "Motor OpenVINO no disponible"}), 500
+
+    data = request.get_json(silent=True) or {}
+    frame_data = data.get("frame")
+    
+    try:
+        # Decodificar imagen base64
+        _, encoded = frame_data.split(",", 1)
+        image_bytes = base64.b64decode(encoded)
+        nparr = np.frombuffer(image_bytes, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        # Preprocesamiento YOLO (640x640)
+        input_img = cv2.resize(frame, (640, 640))
+        input_img = input_img.transpose((2, 0, 1))
+        input_img = np.expand_dims(input_img, axis=0).astype(np.float32) / 255.0
+
+        # Inferencia
+        output_layer = model.output(0)
+        results = model([input_img])[output_layer]
+        detections = results[0].transpose()
+
+        boxes, confidences, class_ids = [], [], []
+        for row in detections:
+            scores = row[4:]
+            class_id = np.argmax(scores)
+            conf = scores[class_id]
+            if conf > 0.45:
+                nombre = COCO_CLASSES[class_id] if class_id < len(COCO_CLASSES) else "objeto"
+                if nombre in MIS_OBJETIVOS:
+                    xc, yc, ww, hh = row[:4]
+                    # Guardamos coordenadas escaladas a 640 para el frontend
+                    boxes.append([int((xc - ww/2)*640), int((yc - hh/2)*640), int(ww*640), int(hh*640)])
+                    confidences.append(float(conf))
+                    class_ids.append(int(class_id))
+
+        # NMS para eliminar cuadros duplicados
+        indices = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
+        
+        final_objs = []
+        conteo = {obj: 0 for obj in MIS_OBJETIVOS}
+
+        if len(indices) > 0:
+            for i in indices.flatten():
+                clase_real = COCO_CLASSES[class_ids[i]]
+                final_objs.append({
+                    "clase": clase_real,
+                    "confianza": round(confidences[i], 2),
+                    "bbox": [boxes[i][0], boxes[i][1], boxes[i][0]+boxes[i][2], boxes[i][1]+boxes[i][3]]
+                })
+                if clase_real in conteo: conteo[clase_real] += 1
+
+        return jsonify({
+            "ok": True,
+            "objects": final_objs,
+            "conteo": {
+                "person": conteo.get("persona", 0),
+                "car": conteo.get("carro", 0),
+                "motorcycle": conteo.get("moto", 0),
+                "bus": conteo.get("bus", 0),
+                "truck": conteo.get("camion", 0),
+                "dog": conteo.get("perro", 0)
+            },
+            "imagen_procesada": frame_data
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+    
+
+# Esta función esta programada para trabajar con RUNPOD
 @app.route("/api/emergencia/procesar-frame", methods=["POST"])
 def api_procesar_frame():
     control = liberar_transmision_si_expirada()
