@@ -97,7 +97,8 @@ API_KEY = os.getenv("RUNPOD_API_KEY")
 # =========================================================
 OV_CORE = None
 OV_MODEL = None
-# Lista completa para evitar IndexError
+
+# Lista completa de objetos
 COCO_CLASSES = [
     'persona', 'bicicleta', 'carro', 'moto', 'avion', 'bus', 'tren', 'camion', 'bote', 'semaforo',
     'hidrante', 'stop', 'parquimetro', 'banca', 'pajaro', 'gato', 'perro', 'caballo', 'oveja', 'vaca',
@@ -108,11 +109,11 @@ COCO_CLASSES = [
     'comedor', 'baño', 'tv', 'laptop', 'mouse', 'control', 'teclado', 'celular', 'microondas', 'horno',
     'tostadora', 'fregadero', 'refrigerador', 'libro', 'reloj', 'florero', 'tijeras', 'teddy', 'secador', 'cepillo'
 ]
-# Filtro específico para Incabit
-MIS_OBJETIVOS = ['persona', 'bicicleta', 'carro', 'moto', 'bus', 'camion', 'perro', 'semaforo', 'hidrante',
-    'pajaro', 'gato', 'mochila', 'cartera', 'maleta', 'pelota', 'botella', 'copa', 'taza', 'tenedor', 'cuchillo',
-    'cuchara', 'silla', 'sofá', 'planta', 'cama', 'baño', 'tv', 'laptop', 'mouse', 'teclado', 'celular', 'libro'
-]
+# Lista de objetos por detectar
+MIS_CLASES = ['persona', 'bicicleta', 'carro', 'moto', 'bus', 'camion', 'semaforo', 'hidrante', 'stop', 'perro', 
+                 'pajaro', 'gato', 'mochila', 'cartera', 'maleta', 'pelota', 'botella', 'copa', 'taza', 'tenedor', 
+                 'cuchillo', 'cuchara', 'pastel', 'silla', 'sofá', 'planta', 'cama', 'comedor', 'baño', 'tv', 'laptop', 
+                 'mouse', 'teclado', 'celular', 'horno', 'refrigerador', 'libro', 'reloj', 'florero']
 
 def get_openvino_model():
     global OV_CORE, OV_MODEL
@@ -408,6 +409,10 @@ def contacto():
 def emergencia():
     return render_template("emergencia.html", page_title="Emergencia")
 
+@app.route("/transmitir")
+def transmitir():
+    return render_template("emergencia_transmitir.html", page_title="Transmitir")
+
 
 @app.route("/emergencia/reportar", methods=["GET", "POST"])
 def emergencia_reportar():
@@ -610,7 +615,7 @@ def api_procesar_frame_openvino():
             conf = scores[class_id]
             if conf > 0.5:
                 nombre = COCO_CLASSES[class_id] if class_id < len(COCO_CLASSES) else "objeto"
-                if nombre in MIS_OBJETIVOS:
+                if nombre in MIS_CLASES:
                     xc, yc, ww, hh = row[:4]
                     # Coordenadas en el espacio de 640x640
                     x1 = int(xc - ww/2)
@@ -625,7 +630,7 @@ def api_procesar_frame_openvino():
         indices = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
         
         final_objs = []
-        # conteo = {obj: 0 for obj in MIS_OBJETIVOS}
+
         # 1. Listas de agrupación
         GRUPO_VEHICULOS = ['bicicleta', 'carro', 'moto', 'bus', 'camion']
         # 2. Inicializar conteo de grupos
@@ -650,7 +655,7 @@ def api_procesar_frame_openvino():
                     conteo_grupos["personas"] += 1
                 elif clase_real in GRUPO_VEHICULOS:
                     conteo_grupos["vehiculos"] += 1
-                elif clase_real in MIS_OBJETIVOS:
+                elif clase_real in MIS_CLASES:
                     conteo_grupos["otros"] += 1
 
         return jsonify({

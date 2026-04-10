@@ -9,8 +9,7 @@
         <!-- Estado inicial -->
         <div id="bloque-inicial" class="hero-actions" style="margin: 24px auto; display: block !important; text-align: center;">
             <!-- <button type="button" class="btn" id="btn-iniciar-gpu" style="width: 190px;">Iniciar Transmisión GPU (runpod)</button> -->
-            <button type="button" class="btn" id="btn-iniciar-openvino" style="width: 190px;">Transmitir con OpenVINO</button>
-            <button type="button" class="btn btn-secondary" id="btn-iniciar-ultralytics" style="width: 190px;">Transmitir con Ultralytics</button>
+            <button type="button" class="btn" id="btn-iniciar-openvino" style="width: 190px;">Iniciar Transmisión</button>
         </div>
 
         <!-- Mensaje final -->
@@ -22,13 +21,11 @@
 
         <div id="resultado-final" style="display:none; margin-top: 24px;">
             <article class="card" style="text-align: center;">
-                <h4>Elementos detectados</h4>
-                <div id="final-resumen-items" style="margin-top: 16px;">
-                    <div id="fila-final-personas">Personas: <b id="final-personas">0</b></div>
-                    <div id="fila-final-vehiculos">Vehículos: <b id="final-vehiculos">0</b></div>
-                    <div id="fila-final-otros">Otros: <b id="final-otros">0</b></div>
+                <div id="final-resumen-items" style="margin-top: 5px; font-size: 16px; display: inline-flex;">
+                    <span id="fila-final-personas">Personas: <b id="final-personas">0</b></span> &nbsp;
+                    <span id="fila-final-vehiculos">Vehículos: <b id="final-vehiculos">0</b></span> &nbsp;
+                    <span id="fila-final-otros">Otros objetos: <b id="final-otros">0</b></span>
                 </div>
-
                 <div style="margin-top: 22px;">
                     <img
                         id="final-imagen"
@@ -52,13 +49,10 @@
     <div class="container cards cards">
 
         <article class="card">
-            <h3>Cámara y Resultados en vivo</h3>
-
             <div class="contenedor-video" style="position: relative; width: 100%; max-width: 640px; margin: 0 auto;">
                 <video id="video" autoplay playsinline muted 
                     style="width: 100%; border-radius: 14px; background: #111; object-fit: cover; display: block;">
                 </video>
-
                 <canvas id="canvas-deteccion" 
                         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; pointer-events: none; z-index: 10;">
                 </canvas>
@@ -68,7 +62,7 @@
                 Preparado para procesar ...
             </div>
 
-            <div style="margin-top: 12px; text-align: center;">
+            <div style="margin-top: 12px; text-align: center;" hidden>
                 <p>
                     👤 Personas: <b id="conteo-personas">0</b> &nbsp;&nbsp; 
                     🚗 Vehículos: <b id="conteo-vehiculos">0</b> &nbsp;&nbsp; 
@@ -114,7 +108,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // const btnIniciarPrincipal = document.getElementById("btn-iniciar-gpu");
     const btnIniciarOpenVINO = document.getElementById("btn-iniciar-openvino");
-    const btnIniciarUltralytics = document.getElementById("btn-iniciar-ultralytics")
     const btnDetener = document.getElementById("btn-detener");
 
     const video = document.getElementById("video");
@@ -180,42 +173,31 @@ document.addEventListener("DOMContentLoaded", function () {
         panelTransmision.style.display = "block";
     }
 
-    function dibujarDetecciones(detecciones) {
+    function dibujarDetecciones(conteo) {
         canvasDeteccion.width = video.videoWidth;
         canvasDeteccion.height = video.videoHeight;
         ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
 
-        if (!detecciones || detecciones.length === 0) return;
+        if (!conteo) return;
 
-        // Calculamos escalas basadas en 640 (el tamaño que usa el backend para OpenVINO)
-        const scaleX = video.videoWidth / 640;
-        const scaleY = video.videoHeight / 640;
+        // 1. Construir el mensaje resumido
+        const texto = `Personas : ${conteo.personas}     Vehículos : ${conteo.vehiculos}    Otros objetos: ${conteo.otros}`;
 
-        detecciones.forEach(obj => {
-            const [x1, y1, x2, y2] = obj.bbox;
-            
-            const esPersona = (obj.clase === 'persona' || obj.clase === 'person');
-            const color = esPersona ? "#FF3300" : "#00AAFF";
+        // 2. Configurar estilo de fuente
+        ctx.font = "16px Arial";
+        const anchoTexto = ctx.measureText(texto).width;
 
-            // Aplicamos la escala a las coordenadas
-            const rx1 = x1 * scaleX;
-            const ry1 = y1 * scaleY;
-            const rx2 = x2 * scaleX;
-            const ry2 = y2 * scaleY;
+        // 3. Dibujar un fondo negro semi-transparente para que el amarillo resalte
+        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        // Dibujamos una barra en la parte superior
+        ctx.fillRect(0, 0, canvasDeteccion.width, 30);
 
-            // El ancho es la diferencia entre x2 y x1
-            const width = rx2 - rx1;
-            const height = ry2 - ry1;
+        // 4. Dibujar el texto en AMARILLO llamativo
+        ctx.fillStyle = "#FFFF00"; // Amarillo neón
+        // Centramos el texto horizontalmente
+        const xPos = (canvasDeteccion.width / 2) - (anchoTexto / 2);
+        ctx.fillText(texto, xPos, 19);
 
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 4;
-            ctx.strokeRect(rx1, ry1, width, height);
-
-            ctx.fillStyle = color;
-            const texto = `${obj.clase.toUpperCase()} ${Math.round(obj.confianza * 100)}%`;
-            ctx.font = "bold 16px Arial";
-            ctx.fillText(texto, rx1 + 5, ry1 - 7);
-        });
     }
 
     function limpiarPanel() {
@@ -313,8 +295,6 @@ document.addEventListener("DOMContentLoaded", function () {
         iniciando = false;
         btnIniciarOpenVINO.disabled = false;
         btnIniciarOpenVINO.style.opacity = "1";
-        btnIniciarUltralytics.disabled = false;
-        btnIniciarUltralytics.style.opacity = "1";
     }
 
     async function iniciarCamara() {
@@ -388,91 +368,60 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            // 1. Unificar la fuente de datos: priorizar 'objects'
-            const listaObjetos = data.objects || data.detecciones || [];
-            
-            // 2. Dibujar en vivo
-            dibujarDetecciones(listaObjetos);
+            if (data.ok) {
+                const listaObjetos = data.objects || [];
+                dibujarDetecciones(data.conteo); // Esto ahora solo limpia el canvas
 
-            let personas = 0;
-            let vehiculos = 0;
-            let otros = 0;
+                if (data.conteo) {
+                    // 1. Actualizar los contadores grandes (opcional si ya tienes el texto)
+                    conteoPersonas.textContent = data.conteo.personas;
+                    conteoVehiculos.textContent = data.conteo.vehiculos;
+                    conteoOtros.textContent = data.conteo.otros;
 
-            if (data.conteo) {
-                // Actualizamos los contadores usando las llaves que definimos en el backend
-                conteoPersonas.textContent = data.conteo.personas || 0;
-                conteoVehiculos.textContent = data.conteo.vehiculos || 0;
-                conteoOtros.textContent = data.conteo.otros || 0;
+                    // 2. Lógica del "Mejor Frame" (Aquí SÍ dibujamos los cuadros)
+                    const totalActual = data.conteo.personas + data.conteo.vehiculos + data.conteo.otros;
+                    if (totalActual > mejorConteo.total) {
+                        mejorConteo = { ...data.conteo, total: totalActual };
 
-                // 3. Asignar valores a variables locales para el cálculo del "Mejor Frame"
-                let p = data.conteo.personas || 0;
-                let v = data.conteo.vehiculos || 0;
-                let o = data.conteo.otros || 0;
+                        const canvasFinal = document.createElement("canvas");
+                        canvasFinal.width = video.videoWidth;
+                        canvasFinal.height = video.videoHeight;
+                        const tempCtx = canvasFinal.getContext("2d");
 
-                // 4. Guardar en el resumen global para el mensaje final
-                ultimoResumen.personas = p;
-                ultimoResumen.vehiculos = v;
-                ultimoResumen.otros = o;
+                        // Dibujamos la imagen real
+                        tempCtx.drawImage(video, 0, 0, canvasFinal.width, canvasFinal.height);
 
-                const totalObjetos = p + v + o;
-                if (totalObjetos > mejorConteo.total) {
-                    mejorConteo = { personas: p, vehiculos: v, otros: o, total: totalObjetos };
-                    
-                    // FUSIONAR PARA EL RESUMEN FINAL
-                    // Usamos 'listaObjetos' para que funcione con CPU y GPU
-                    const canvasFinal = document.createElement("canvas");
-                    canvasFinal.width = video.videoWidth;
-                    canvasFinal.height = video.videoHeight;
-                    const tempCtx = canvasFinal.getContext("2d");
+                        const sX = video.videoWidth / 640;
+                        const sY = video.videoHeight / 640;
 
-                    tempCtx.drawImage(video, 0, 0, canvasFinal.width, canvasFinal.height);
+                        // DIBUJAMOS LOS CUADROS Y NOMBRES SOLO EN ESTA IMAGEN ESTÁTICA
+                        listaObjetos.forEach(obj => {
+                            const [x1, y1, x2, y2] = obj.bbox;
+                            const color = (obj.clase === 'persona' || obj.clase === 'person') ? "#FF3300" : "#00AAFF";
+                            
+                            tempCtx.strokeStyle = color;
+                            tempCtx.lineWidth = 5;
+                            tempCtx.strokeRect(x1 * sX, y1 * sY, (x2 - x1) * sX, (y2 - y1) * sY);
 
-                    const sX = video.videoWidth / 640;
-                    const sY = video.videoHeight / 640;
-
-                    listaObjetos.forEach(obj => {
-                        const [x1, y1, x2, y2] = obj.bbox;
-                        const esPersona = (obj.clase === 'persona' || obj.clase === 'person');
-                        const color = esPersona ? "#FF3300" : "#00AAFF";
-                        
-                        tempCtx.strokeStyle = color;
-                        tempCtx.lineWidth = 5;
-                        tempCtx.strokeRect(x1 * sX, y1 * sY, (x2 - x1) * sX, (y2 - y1) * sY);
-                        
-                        // Construir el texto: Nombre + Confianza%
-                        tempCtx.fillStyle = color;
-                        const texto = `${obj.clase.toUpperCase()} ${Math.round(obj.confianza * 100)}%`;
-                        tempCtx.font = "bold 16px Arial";
-                        tempCtx.fillText(texto, (x1 * sX) + 5, (y1 * sY) - 7);
-                    });
-
-                    const fechaLocal = new Date().toLocaleString('es-PE');
-                    tempCtx.fillStyle = "white";
-                    tempCtx.font = "bold 24px Arial";
-                    tempCtx.fillText(fechaLocal, 20, canvasFinal.height - 30);
-
-                    mejorFrameProcesado = canvasFinal.toDataURL("image/jpeg", 0.75);
-                }
-
-                if (listaDetecciones) {
-                    listaDetecciones.innerHTML = "";
-
-                    if (data.detecciones && data.detecciones.length > 0) {
-                        data.detecciones.forEach(item => {
-                            const li = document.createElement("li");
-                            li.textContent = `${item.clase} - confianza: ${item.confianza}`;
-                            listaDetecciones.appendChild(li);
+                            // Nombre y Confianza (Exactos para este segundo)
+                            tempCtx.fillStyle = color;
+                            tempCtx.font = "bold 16px Arial";
+                            tempCtx.fillText(`${obj.clase.toUpperCase()} ${Math.round(obj.confianza * 100)}%`, (x1 * sX), (y1 * sY) - 10);
                         });
-                    } else {
-                        const li = document.createElement("li");
-                        li.textContent = "No se detectaron objetos relevantes.";
-                        listaDetecciones.appendChild(li);
+
+                        // Sello de tiempo de Los Olivos
+                        const fecha = new Date().toLocaleString('es-PE');
+                        tempCtx.fillStyle = "white";
+                        tempCtx.font = "bold 18px Arial";
+                        tempCtx.fillText(fecha, 20, canvasFinal.height - 30);
+
+                        mejorFrameProcesado = canvasFinal.toDataURL("image/jpeg", 0.9);
                     }
                 }
-
                 estadoProceso.textContent = `Frame procesado. Tiempo restante: ${segundosRestantes}s`;
                 procesando = false;
             }
+            
         })
         .catch(error => {
             console.error(error);
@@ -514,7 +463,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // Ahora los botones solo llaman a la función principal
     // btnIniciarPrincipal.addEventListener("click", () => iniciarFlujoTransmision("gpu"));
     btnIniciarOpenVINO.addEventListener("click", () => iniciarFlujoTransmision("openvino"));
-    btnIniciarUltralytics.addEventListener("click", () => iniciarFlujoTransmision("ultralytics"));
 
     // Función genérica que contiene toda la lógica que ya tenías
     async function iniciarFlujoTransmision(motor) {
@@ -547,8 +495,6 @@ document.addEventListener("DOMContentLoaded", function () {
         iniciando = true;
         btnIniciarOpenVINO.disabled = true;
         btnIniciarOpenVINO.style.opacity = "0.6";
-        btnIniciarUltralytics.disabled = true;
-        btnIniciarUltralytics.style.opacity = "0.6";
         mensajeFinal.style.display = "none";
 
         mejorFrameProcesado = null;
@@ -599,8 +545,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 iniciando = false;
                 btnIniciarOpenVINO.disabled = false;
                 btnIniciarOpenVINO.style.opacity = "1";
-                btnIniciarUltralytics.disabled = false;
-                btnIniciarUltralytics.style.opacity = "1";
                 return;
             }
 
@@ -618,8 +562,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 iniciando = false;
                 btnIniciarOpenVINO.disabled = false;
                 btnIniciarOpenVINO.style.opacity = "1";
-                btnIniciarUltralytics.disabled = false;
-                btnIniciarUltralytics.style.opacity = "1";
                 return;
             }
 
@@ -652,8 +594,6 @@ document.addEventListener("DOMContentLoaded", function () {
             iniciando = false;
             btnIniciarOpenVINO.disabled = false;
             btnIniciarOpenVINO.style.opacity = "1";
-            btnIniciarUltralytics.disabled = false;
-            btnIniciarUltralytics.style.opacity = "1";
         }
     };
 
