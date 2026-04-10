@@ -22,10 +22,11 @@
         <div id="resultado-final" style="display:none; margin-top: 24px;">
             <article class="card" style="text-align: center;">
                 <div id="final-resumen-items" style="margin-top: 5px; font-size: 16px; display: inline-flex;">
-                    <span id="fila-final-personas">Personas: <b id="final-personas">0</b></span> &nbsp;
-                    <span id="fila-final-vehiculos">Vehículos: <b id="final-vehiculos">0</b></span> &nbsp;
-                    <span id="fila-final-otros">Otros objetos: <b id="final-otros">0</b></span>
+                    <span id="fila-final-personas"> 👤 : <b id="final-personas">0</b></span> &nbsp;
+                    <span id="fila-final-vehiculos">🚗 : <b id="final-vehiculos">0</b></span> &nbsp;
+                    <span id="fila-final-otros">    📦 : <b id="final-otros">0</b></span>
                 </div>
+
                 <div style="margin-top: 22px;">
                     <img
                         id="final-imagen"
@@ -173,31 +174,76 @@ document.addEventListener("DOMContentLoaded", function () {
         panelTransmision.style.display = "block";
     }
 
+    // function dibujarDetecciones(conteo) {
+    //     canvasDeteccion.width = video.videoWidth;
+    //     canvasDeteccion.height = video.videoHeight;
+    //     ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
+
+    //     if (!conteo) return;
+    //     // 1. Construir el mensaje resumido
+    //     const texto = `Personas : ${conteo.personas}     Vehículos : ${conteo.vehiculos}    Otros objetos: ${conteo.otros}`;
+    //     // 2. Configurar estilo de fuente
+    //     ctx.font = "16px Arial";
+    //     const anchoTexto = ctx.measureText(texto).width;
+    //     // 3. Dibujar un fondo negro semi-transparente para que el amarillo resalte
+    //     ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    //     // Dibujamos una barra en la parte superior
+    //     ctx.fillRect(0, 0, canvasDeteccion.width, 30);
+    //     // 4. Dibujar el texto en AMARILLO llamativo
+    //     ctx.fillStyle = "#FFFF00"; // Amarillo neón
+    //     // Centramos el texto horizontalmente
+    //     const xPos = (canvasDeteccion.width / 2) - (anchoTexto / 2);
+    //     ctx.fillText(texto, xPos, 19);
+    // }
+
     function dibujarDetecciones(conteo) {
         canvasDeteccion.width = video.videoWidth;
         canvasDeteccion.height = video.videoHeight;
         ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
 
-        if (!conteo) return;
+        if (!conteo || conteo.personas === undefined) return;
 
-        // 1. Construir el mensaje resumido
-        const texto = `Personas : ${conteo.personas}     Vehículos : ${conteo.vehiculos}    Otros objetos: ${conteo.otros}`;
+        // 1. Configuración de estilo y separador
+        ctx.font = "bold 18px Arial";
+        const separador = "   ";
+        
+        // 2. Definir los segmentos y sus valores para la lógica de color
+        const segmentos = [
+            { texto: `Personas: ${conteo.personas}`, valor: conteo.personas },
+            { texto: `Vehículos: ${conteo.vehiculos}`, valor: conteo.vehiculos },
+            { texto: `Otros objetos: ${conteo.otros}`, valor: conteo.otros }
+        ];
 
-        // 2. Configurar estilo de fuente
-        ctx.font = "16px Arial";
-        const anchoTexto = ctx.measureText(texto).width;
+        // 3. Calcular el ancho total de todos los segmentos para centrar el banner
+        let anchoTotal = 0;
+        segmentos.forEach((s, i) => {
+            anchoTotal += ctx.measureText(s.texto).width;
+            if (i < segmentos.length - 1) anchoTotal += ctx.measureText(separador).width;
+        });
 
-        // 3. Dibujar un fondo negro semi-transparente para que el amarillo resalte
+        // 4. Dibujar fondo negro semi-transparente
         ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-        // Dibujamos una barra en la parte superior
-        ctx.fillRect(0, 0, canvasDeteccion.width, 30);
+        ctx.fillRect(0, 0, canvasDeteccion.width, 45);
 
-        // 4. Dibujar el texto en AMARILLO llamativo
-        ctx.fillStyle = "#FFFF00"; // Amarillo neón
-        // Centramos el texto horizontalmente
-        const xPos = (canvasDeteccion.width / 2) - (anchoTexto / 2);
-        ctx.fillText(texto, xPos, 19);
+        // 5. Dibujar cada segmento con su color correspondiente
+        let xPos = (canvasDeteccion.width / 2) - (anchoTotal / 2);
+        const yPos = 30; // Altura del texto dentro del banner
 
+        segmentos.forEach((s, i) => {
+            // LÓGICA DE COLOR: Verde (#00FF00) si detecta algo, Amarillo (#FFFF00) si es cero
+            ctx.fillStyle = s.valor > 0 ? "#00FF00" : "#FFFF00";
+            ctx.fillText(s.texto, xPos, yPos);
+            
+            // Avanzamos el puntero X según el ancho del texto recién dibujado
+            xPos += ctx.measureText(s.texto).width;
+
+            // Dibujar el separador siempre en amarillo para mantener la estructura
+            if (i < segmentos.length - 1) {
+                ctx.fillStyle = "#FFFF00";
+                ctx.fillText(separador, xPos, yPos);
+                xPos += ctx.measureText(separador).width;
+            }
+        });
     }
 
     function limpiarPanel() {
@@ -397,10 +443,10 @@ document.addEventListener("DOMContentLoaded", function () {
                         // DIBUJAMOS LOS CUADROS Y NOMBRES SOLO EN ESTA IMAGEN ESTÁTICA
                         listaObjetos.forEach(obj => {
                             const [x1, y1, x2, y2] = obj.bbox;
-                            const color = (obj.clase === 'persona' || obj.clase === 'person') ? "#FF3300" : "#00AAFF";
+                            const color = (obj.clase === 'persona' || obj.clase === 'person') ? "#FF4400" : "#00AAFF";
                             
                             tempCtx.strokeStyle = color;
-                            tempCtx.lineWidth = 5;
+                            tempCtx.lineWidth = 4;
                             tempCtx.strokeRect(x1 * sX, y1 * sY, (x2 - x1) * sX, (y2 - y1) * sY);
 
                             // Nombre y Confianza (Exactos para este segundo)
