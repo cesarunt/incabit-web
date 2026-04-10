@@ -109,7 +109,10 @@ COCO_CLASSES = [
     'tostadora', 'fregadero', 'refrigerador', 'libro', 'reloj', 'florero', 'tijeras', 'teddy', 'secador', 'cepillo'
 ]
 # Filtro específico para Incabit
-MIS_OBJETIVOS = ['persona', 'bicicleta', 'carro', 'moto', 'bus', 'camion', 'perro']
+MIS_OBJETIVOS = ['persona', 'bicicleta', 'carro', 'moto', 'bus', 'camion', 'perro', 'semaforo', 'hidrante',
+    'pajaro', 'gato', 'mochila', 'cartera', 'maleta', 'pelota', 'botella', 'copa', 'taza', 'tenedor', 'cuchillo',
+    'cuchara', 'silla', 'sofá', 'planta', 'cama', 'baño', 'tv', 'laptop', 'mouse', 'teclado', 'celular', 'libro'
+]
 
 def get_openvino_model():
     global OV_CORE, OV_MODEL
@@ -586,33 +589,30 @@ def api_procesar_frame_openvino():
     frame_data = data.get("frame")
     
     try:
-        # Decodificar imagen base64
         _, encoded = frame_data.split(",", 1)
         image_bytes = base64.b64decode(encoded)
         nparr = np.frombuffer(image_bytes, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        # Preprocesamiento YOLO (640x640)
+        # Redimensionar a 640x640 (formato nativo de YOLOv11)
         input_img = cv2.resize(frame, (640, 640))
         input_img = input_img.transpose((2, 0, 1))
         input_img = np.expand_dims(input_img, axis=0).astype(np.float32) / 255.0
 
-        # Inferencia
         output_layer = model.output(0)
         results = model([input_img])[output_layer]
         detections = results[0].transpose()
 
         boxes, confidences, class_ids = [], [], []
-        # --- DENTRO DE api_procesar_frame_openvino ---
         for row in detections:
             scores = row[4:]
             class_id = np.argmax(scores)
             conf = scores[class_id]
-            if conf > 0.45:
+            if conf > 0.5:
                 nombre = COCO_CLASSES[class_id] if class_id < len(COCO_CLASSES) else "objeto"
                 if nombre in MIS_OBJETIVOS:
                     xc, yc, ww, hh = row[:4]
-                    # CORRECCIÓN: Eliminamos el *640 porque ya están en escala de píxeles
+                    # Coordenadas en el espacio de 640x640
                     x1 = int(xc - ww/2)
                     y1 = int(yc - hh/2)
                     x2 = int(xc + ww/2)
@@ -622,38 +622,46 @@ def api_procesar_frame_openvino():
                     confidences.append(float(conf))
                     class_ids.append(int(class_id))
 
-        # NMS para eliminar cuadros duplicados
         indices = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
         
         final_objs = []
-        conteo = {obj: 0 for obj in MIS_OBJETIVOS}
+        # conteo = {obj: 0 for obj in MIS_OBJETIVOS}
+        # 1. Listas de agrupación
+        GRUPO_VEHICULOS = ['bicicleta', 'carro', 'moto', 'bus', 'camion']
+        # 2. Inicializar conteo de grupos
+        conteo_grupos = {
+            "personas": 0,
+            "vehiculos": 0,
+            "otros": 0
+        }
 
         if len(indices) > 0:
             for i in indices.flatten():
                 clase_real = COCO_CLASSES[class_ids[i]]
+                # CORRECCIÓN AQUÍ: No sumamos de nuevo, usamos x1, y1, x2, y2 directamente
                 final_objs.append({
                     "clase": clase_real,
                     "confianza": round(confidences[i], 2),
-                    "bbox": [boxes[i][0], boxes[i][1], boxes[i][0]+boxes[i][2], boxes[i][1]+boxes[i][3]]
+                    "bbox": [boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3]]
                 })
-                if clase_real in conteo: conteo[clase_real] += 1
+                # if clase_real in conteo: conteo[clase_real] += 1
+                # Lógica de agrupación de conteo
+                if clase_real == 'persona':
+                    conteo_grupos["personas"] += 1
+                elif clase_real in GRUPO_VEHICULOS:
+                    conteo_grupos["vehiculos"] += 1
+                elif clase_real in MIS_OBJETIVOS:
+                    conteo_grupos["otros"] += 1
 
         return jsonify({
             "ok": True,
             "objects": final_objs,
-            "conteo": {
-                "person": conteo.get("persona", 0),
-                "car": conteo.get("carro", 0),
-                "motorcycle": conteo.get("moto", 0),
-                "bus": conteo.get("bus", 0),
-                "truck": conteo.get("camion", 0),
-                "dog": conteo.get("perro", 0)
-            },
+            "conteo": conteo_grupos, # Enviamos el conteo ya agrupado
             "imagen_procesada": frame_data
         })
     except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-    
+        return jsonify({"ok": False, "error": str(e)}), 500    
+
 
 # Esta función esta programada para trabajar con RUNPOD
 @app.route("/api/emergencia/procesar-frame", methods=["POST"])

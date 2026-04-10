@@ -26,7 +26,7 @@
                 <div id="final-resumen-items" style="margin-top: 16px;">
                     <div id="fila-final-personas">Personas: <b id="final-personas">0</b></div>
                     <div id="fila-final-vehiculos">Vehículos: <b id="final-vehiculos">0</b></div>
-                    <div id="fila-final-perros">Perros: <b id="final-perros">0</b></div>
+                    <div id="fila-final-otros">Otros: <b id="final-otros">0</b></div>
                 </div>
 
                 <div style="margin-top: 22px;">
@@ -64,28 +64,16 @@
                 </canvas>
             </div>
 
-            <!-- <video id="video" autoplay playsinline muted
-                   style="width: 100%; border-radius: 14px; background: #111; max-width: 120px; object-fit: cover; display: block; margin-left: auto; margin-right: auto;" hidden>
-            </video>
-
-            <canvas id="canvas" style="display:none;"></canvas> <br> -->
-
-            <!-- Resultado en vivo -->
-            <!-- <img id="resultado-imagen"
-                 style="width: 100%; border-radius: 14px; background: #111; max-height: 640px; object-fit: contain; display: none;"
-                 alt="Resultado YOLO">
-
-            <div id="placeholder-resultado"
-                 style="width: 100%; min-height: 320px; border-radius: 14px; background: #111; display: flex; align-items: center; justify-content: center; color: #777;">
-                Esperando procesamiento...
-            </div> -->
-
             <div id="estado-proceso" style="margin-top: 14px; color: #9ca3af;">
                 Preparado para procesar ...
             </div>
 
             <div style="margin-top: 12px; text-align: center;">
-                <p>👤 = <b id="conteo-personas">0</b> &nbsp;&nbsp; 🚗 = <b id="conteo-vehiculos">0</b> &nbsp;&nbsp; 🐶 = <b id="conteo-perros">0</b></p>
+                <p>
+                    👤 Personas: <b id="conteo-personas">0</b> &nbsp;&nbsp; 
+                    🚗 Vehículos: <b id="conteo-vehiculos">0</b> &nbsp;&nbsp; 
+                    📦 Otros: <b id="conteo-otros">0</b>
+                </p>
             </div>
 
             <div style="margin-top: 18px;" hidden>
@@ -142,15 +130,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const conteoPersonas = document.getElementById("conteo-personas");
     const conteoVehiculos = document.getElementById("conteo-vehiculos");
-    const conteoPerros = document.getElementById("conteo-perros");
+    // const conteoPerros = document.getElementById("conteo-perros");
+    const conteoOtros = document.getElementById("conteo-otros");
     const filaFinalPersonas = document.getElementById("fila-final-personas");
     const filaFinalVehiculos = document.getElementById("fila-final-vehiculos");
-    const filaFinalPerros = document.getElementById("fila-final-perros");
+    const filaFinalOtros = document.getElementById("fila-final-otros");
 
     const resultadoFinal = document.getElementById("resultado-final");
     const finalPersonas = document.getElementById("final-personas");
     const finalVehiculos = document.getElementById("final-vehiculos");
-    const finalPerros = document.getElementById("final-perros");
+    const finalOtros = document.getElementById("final-otros");
     const finalImagen = document.getElementById("final-imagen");
     const btnDescargarImagen = document.getElementById("btn-descargar-imagen");
 
@@ -168,16 +157,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let mejorFrameProcesado = null;
     let mejorConteo = {
-        person: 0,
+        personas: 0,
         vehiculos: 0,
-        dog: 0,
+        otros: 0,
         total: 0
     };
 
     let ultimoResumen = {
-        person: 0,
+        personas: 0,
         vehiculos: 0,
-        dog: 0
+        otros: 0
     };
 
     function mostrarEstadoInicial() {
@@ -192,48 +181,40 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function dibujarDetecciones(detecciones) {
-        // 1. Sincronización forzada de dimensiones
         canvasDeteccion.width = video.videoWidth;
         canvasDeteccion.height = video.videoHeight;
-
-        // 2. Limpieza total para evitar "fantasmas"
         ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
 
         if (!detecciones || detecciones.length === 0) return;
 
-        // 3. Cálculo de Escala Real (YOLO 11 usa base 640)
-        // El celular en vertical envía una imagen donde el ancho es menor al alto.
+        // Calculamos escalas basadas en 640 (el tamaño que usa el backend para OpenVINO)
         const scaleX = video.videoWidth / 640;
         const scaleY = video.videoHeight / 640;
 
         detecciones.forEach(obj => {
             const [x1, y1, x2, y2] = obj.bbox;
-            // CORRECCIÓN: Mapeo de color para español o inglés
+            
             const esPersona = (obj.clase === 'persona' || obj.clase === 'person');
-            const color = esPersona ? "#00FF00" : "#00AAFF";
+            const color = esPersona ? "#FF3300" : "#00AAFF";
 
-            // Ajuste de coordenadas con escala asimétrica
+            // Aplicamos la escala a las coordenadas
             const rx1 = x1 * scaleX;
             const ry1 = y1 * scaleY;
             const rx2 = x2 * scaleX;
             const ry2 = y2 * scaleY;
+
+            // El ancho es la diferencia entre x2 y x1
             const width = rx2 - rx1;
             const height = ry2 - ry1;
 
-            // const color = (obj.clase === 'person') ? "#00FF00" : "#00AAFF";
-            // const porcentaje = Math.round(obj.confianza * 100);
-
-            // 4. Dibujar el Cuadro
             ctx.strokeStyle = color;
             ctx.lineWidth = 4;
-            ctx.strokeRect(rx1, ry1, rx2 - rx1, ry2 - ry1);
+            ctx.strokeRect(rx1, ry1, width, height);
 
-            // 5. Dibujar Etiqueta con Fondo (para legibilidad)
             ctx.fillStyle = color;
             const texto = `${obj.clase.toUpperCase()} ${Math.round(obj.confianza * 100)}%`;
             ctx.font = "bold 16px Arial";
             ctx.fillText(texto, rx1 + 5, ry1 - 7);
-            
         });
     }
 
@@ -244,7 +225,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         conteoPersonas.textContent = "0";
         conteoVehiculos.textContent = "0";
-        conteoPerros.textContent = "0";
+        conteoOtros.textContent = "0";
 
         if (listaDetecciones) {
             listaDetecciones.innerHTML = "";
@@ -298,19 +279,19 @@ document.addEventListener("DOMContentLoaded", function () {
             mensajeFinal.style.display = "none";
         }, 10000);
 
-        const personasFinal = mejorConteo.person || ultimoResumen.person || 0;
+        const personasFinal = mejorConteo.personas || ultimoResumen.personas || 0;
         const vehiculosFinal = mejorConteo.vehiculos || ultimoResumen.vehiculos || 0;
-        const perrosFinal = mejorConteo.dog || ultimoResumen.dog || 0;
+        const otrosFinal = mejorConteo.otros || ultimoResumen.otros || 0;
 
         finalPersonas.textContent = personasFinal;
         finalVehiculos.textContent = vehiculosFinal;
-        finalPerros.textContent = perrosFinal;
+        finalOtros.textContent = otrosFinal;
 
         filaFinalPersonas.style.display = personasFinal > 0 ? "block" : "none";
         filaFinalVehiculos.style.display = vehiculosFinal > 0 ? "block" : "none";
-        filaFinalPerros.style.display = perrosFinal > 0 ? "block" : "none";
+        filaFinalOtros.style.display = otrosFinal > 0 ? "block" : "none";
 
-        if (personasFinal === 0 && vehiculosFinal === 0 && perrosFinal === 0) {
+        if (personasFinal === 0 && vehiculosFinal === 0 && otrosFinal === 0) {
             filaFinalPersonas.style.display = "block";
             filaFinalPersonas.innerHTML = "Sin objetos detectados";
         }
@@ -422,80 +403,83 @@ document.addEventListener("DOMContentLoaded", function () {
 
             let personas = 0;
             let vehiculos = 0;
-            let perros = 0;
+            let otros = 0;
 
             if (data.conteo) {
-                personas = data.conteo["person"] || 0;
-                vehiculos =
-                    (data.conteo["car"] || 0) +
-                    (data.conteo["motorcycle"] || 0) +
-                    (data.conteo["bus"] || 0) +
-                    (data.conteo["truck"] || 0);
-                perros = data.conteo["dog"] || 0;
-            }
+                // Actualizamos los contadores usando las llaves que definimos en el backend
+                conteoPersonas.textContent = data.conteo.personas || 0;
+                conteoVehiculos.textContent = data.conteo.vehiculos || 0;
+                conteoOtros.textContent = data.conteo.otros || 0;
 
-            conteoPersonas.textContent = personas;
-            conteoVehiculos.textContent = vehiculos;
-            conteoPerros.textContent = perros;
+                // 3. Asignar valores a variables locales para el cálculo del "Mejor Frame"
+                let p = data.conteo.personas || 0;
+                let v = data.conteo.vehiculos || 0;
+                let o = data.conteo.otros || 0;
 
-            ultimoResumen.person = personas;
-            ultimoResumen.vehiculos = vehiculos;
-            ultimoResumen.dog = perros;
+                // 4. Guardar en el resumen global para el mensaje final
+                ultimoResumen.personas = p;
+                ultimoResumen.vehiculos = v;
+                ultimoResumen.otros = o;
 
-            const totalObjetos = personas + vehiculos + perros;
-            if (totalObjetos > mejorConteo.total) {
-                mejorConteo = { person: personas, vehiculos: vehiculos, dog: perros, total: totalObjetos };
-                
-                // FUSIONAR PARA EL RESUMEN FINAL
-                // Usamos 'listaObjetos' para que funcione con CPU y GPU
-                const canvasFinal = document.createElement("canvas");
-                canvasFinal.width = video.videoWidth;
-                canvasFinal.height = video.videoHeight;
-                const tempCtx = canvasFinal.getContext("2d");
-
-                tempCtx.drawImage(video, 0, 0, canvasFinal.width, canvasFinal.height);
-
-                const sX = video.videoWidth / 640;
-                const sY = video.videoHeight / 640;
-
-                listaObjetos.forEach(obj => {
-                    const [x1, y1, x2, y2] = obj.bbox;
-                    const color = (obj.clase === 'person') ? "#00FF00" : "#00AAFF";
-                    tempCtx.strokeStyle = color;
-                    tempCtx.lineWidth = 5;
-                    tempCtx.strokeRect(x1 * sX, y1 * sY, (x2 - x1) * sX, (y2 - y1) * sY);
+                const totalObjetos = p + v + o;
+                if (totalObjetos > mejorConteo.total) {
+                    mejorConteo = { personas: p, vehiculos: v, otros: o, total: totalObjetos };
                     
-                    tempCtx.fillStyle = color;
-                    tempCtx.font = "bold 22px Arial";
-                    tempCtx.fillText(`${obj.clase} ${Math.round(obj.confianza * 100)}%`, (x1 * sX) + 5, (y1 * sY) - 10);
-                });
+                    // FUSIONAR PARA EL RESUMEN FINAL
+                    // Usamos 'listaObjetos' para que funcione con CPU y GPU
+                    const canvasFinal = document.createElement("canvas");
+                    canvasFinal.width = video.videoWidth;
+                    canvasFinal.height = video.videoHeight;
+                    const tempCtx = canvasFinal.getContext("2d");
 
-                const fechaLocal = new Date().toLocaleString('es-PE');
-                tempCtx.fillStyle = "white";
-                tempCtx.font = "bold 24px Arial";
-                tempCtx.fillText(fechaLocal, 20, canvasFinal.height - 30);
+                    tempCtx.drawImage(video, 0, 0, canvasFinal.width, canvasFinal.height);
 
-                mejorFrameProcesado = canvasFinal.toDataURL("image/jpeg", 0.75);
-            }
+                    const sX = video.videoWidth / 640;
+                    const sY = video.videoHeight / 640;
 
-            if (listaDetecciones) {
-                listaDetecciones.innerHTML = "";
-
-                if (data.detecciones && data.detecciones.length > 0) {
-                    data.detecciones.forEach(item => {
-                        const li = document.createElement("li");
-                        li.textContent = `${item.clase} - confianza: ${item.confianza}`;
-                        listaDetecciones.appendChild(li);
+                    listaObjetos.forEach(obj => {
+                        const [x1, y1, x2, y2] = obj.bbox;
+                        const esPersona = (obj.clase === 'persona' || obj.clase === 'person');
+                        const color = esPersona ? "#FF3300" : "#00AAFF";
+                        
+                        tempCtx.strokeStyle = color;
+                        tempCtx.lineWidth = 5;
+                        tempCtx.strokeRect(x1 * sX, y1 * sY, (x2 - x1) * sX, (y2 - y1) * sY);
+                        
+                        // Construir el texto: Nombre + Confianza%
+                        tempCtx.fillStyle = color;
+                        const texto = `${obj.clase.toUpperCase()} ${Math.round(obj.confianza * 100)}%`;
+                        tempCtx.font = "bold 16px Arial";
+                        tempCtx.fillText(texto, (x1 * sX) + 5, (y1 * sY) - 7);
                     });
-                } else {
-                    const li = document.createElement("li");
-                    li.textContent = "No se detectaron objetos relevantes.";
-                    listaDetecciones.appendChild(li);
-                }
-            }
 
-            estadoProceso.textContent = `Frame procesado. Tiempo restante: ${segundosRestantes}s`;
-            procesando = false;
+                    const fechaLocal = new Date().toLocaleString('es-PE');
+                    tempCtx.fillStyle = "white";
+                    tempCtx.font = "bold 24px Arial";
+                    tempCtx.fillText(fechaLocal, 20, canvasFinal.height - 30);
+
+                    mejorFrameProcesado = canvasFinal.toDataURL("image/jpeg", 0.75);
+                }
+
+                if (listaDetecciones) {
+                    listaDetecciones.innerHTML = "";
+
+                    if (data.detecciones && data.detecciones.length > 0) {
+                        data.detecciones.forEach(item => {
+                            const li = document.createElement("li");
+                            li.textContent = `${item.clase} - confianza: ${item.confianza}`;
+                            listaDetecciones.appendChild(li);
+                        });
+                    } else {
+                        const li = document.createElement("li");
+                        li.textContent = "No se detectaron objetos relevantes.";
+                        listaDetecciones.appendChild(li);
+                    }
+                }
+
+                estadoProceso.textContent = `Frame procesado. Tiempo restante: ${segundosRestantes}s`;
+                procesando = false;
+            }
         })
         .catch(error => {
             console.error(error);
@@ -565,7 +549,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Resetear contadores visuales
         conteoPersonas.textContent = "0";
         conteoVehiculos.textContent = "0";
-        conteoPerros.textContent = "0";
+        conteoOtros.textContent = "0";
 
         iniciando = true;
         btnIniciarOpenVINO.disabled = true;
@@ -576,16 +560,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
         mejorFrameProcesado = null;
         mejorConteo = {
-            person: 0,
+            personas: 0,
             vehiculos: 0,
-            dog: 0,
+            otros: 0,
             total: 0
         };
 
         ultimoResumen = {
-            person: 0,
+            personas: 0,
             vehiculos: 0,
-            dog: 0
+            otros: 0
         };
 
         resultadoFinal.style.display = "none";
