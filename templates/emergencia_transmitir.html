@@ -143,7 +143,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const finalImagen = document.getElementById("final-imagen");
     const btnDescargarImagen = document.getElementById("btn-descargar-imagen");
 
-    const INTERVALO_MS = 1000;
+    const INTERVALO_MS = 500;
     let DURACION_SEGUNDOS = 30;
     let motorActual = "ultralytics"; // "openvino" o "ultralytics"
 
@@ -369,7 +369,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Dibujamos el video en el canvas temporal LIMPIO
         tCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
         // Extraemos la imagen del canvas limpio para enviarla a Render/RunPod
-        const frameData = tempCanvas.toDataURL("image/jpeg", 0.75);
+        const frameData = tempCanvas.toDataURL("image/jpeg", 0.65);
 
         // ELEGIR ENDPOINT
         const endpoint = (motorActual === "openvino") 
@@ -381,13 +381,6 @@ document.addEventListener("DOMContentLoaded", function () {
             body: JSON.stringify({ frame: frameData })
         })
 
-        // fetch("/api/emergencia/procesar-frame", {
-        //     method: "POST",
-        //     headers: {
-        //         "Content-Type": "application/json"
-        //     },
-        //     body: JSON.stringify({ frame: frameData })
-        // })
         .then(res => res.json())
         .then(data => {
             if (!data.ok) {
