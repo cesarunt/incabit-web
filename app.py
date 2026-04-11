@@ -326,13 +326,6 @@ def procesar_frame_yolo_desde_base64(data_url: str):
                 })
                 conteo[clase] = conteo.get(clase, 0) + 1
 
-        # ok, buffer = cv2.imencode(".jpg", annotated)
-        # if not ok:
-        #     return {"ok": False, "error": "No se pudo codificar la imagen procesada"}
-
-        # annotated_base64 = base64.b64encode(buffer).decode("utf-8")
-        # annotated_data_url = f"data:image/jpeg;base64,{annotated_base64}"
-
         # 1. Asegúrate de que el diccionario de conteo tenga las llaves correctas
         conteo_formateado = {
             "person": conteo.get("person", 0),
@@ -680,7 +673,9 @@ def api_procesar_frame_openvino():
 
 # Función para guardar las imagenes generadas posterior a la transmisión de 30 segundos
 # 1. Crear carpeta para los mejores frames si no existe
-MEJORES_FRAMES_FOLDER = os.path.join("static", "uploads", "incabit_image_transmission")
+# MEJORES_FRAMES_FOLDER = os.path.join("static", "uploads", "incabit_image_transmission")
+MEJORES_FRAMES_FOLDER = os.environ.get("CLOUDINARY_FOLDER"),
+
 os.makedirs(MEJORES_FRAMES_FOLDER, exist_ok=True)
 
 @app.route("/api/emergencia/guardar-mejor-frame", methods=["POST"])
