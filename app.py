@@ -17,12 +17,22 @@ from flask import (
     flash,
     jsonify
 )
+import cloudinary
+import cloudinary.uploader
+from cloudinary.utils import cloudinary_url
 from flask_sqlalchemy import SQLAlchemy
 
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "incabit-dev-key")
 
+# Configuración de Cloudinary
+cloudinary.config(
+    cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key    = os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret = os.environ.get("CLOUDINARY_API_SECRET"),
+    secure     = True,
+)
 
 SITE = {
     "brand": "incaB1T",
@@ -667,6 +677,64 @@ def api_procesar_frame_openvino():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500    
 
+
+# Función para guardar las imagenes generadas posterior a la transmisión de 30 segundos
+# 1. Crear carpeta para los mejores frames si no existe
+MEJORES_FRAMES_FOLDER = os.path.join("static", "uploads", "incabit_image_transmission")
+os.makedirs(MEJORES_FRAMES_FOLDER, exist_ok=True)
+
+@app.route("/api/emergencia/guardar-mejor-frame", methods=["POST"])
+def api_guardar_mejor_frame():
+    try:
+        data = request.get_json()
+        frame_b64 = data.get("imagen_final")
+        
+        if not frame_b64:
+            return jsonify({"ok": False, "error": "No se recibió imagen"}), 400
+        
+        # Guardando la imagen en Servidor RENDER, ***************************
+        # En esta nube se borran los archivos en cada Deploy
+        # Decodificar la imagen base64
+        _, encoded = frame_b64.split(",", 1)
+        image_bytes = base64.b64decode(encoded)
+
+        # Generar nombre único: mejor_deteccion_YYYYMMDD_HHMMSS.jpg
+        nombre_archivo = f"mejor_deteccion_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+        ruta_completa = os.path.join(MEJORES_FRAMES_FOLDER, nombre_archivo)
+
+        # Guardar en el disco
+        with open(ruta_completa, "wb") as f:
+            f.write(image_bytes)
+
+        print(f"Evidencia guardada automáticamente en: {ruta_completa}")
+        # *******************************************************************
+
+        # Guardando la imagen en la nube de CLOUDINARY ***************************
+        # Subir directamente a Cloudinary (acepta el string base64 tal cual)
+        upload_result = cloudinary.uploader.upload(
+            frame_b64,
+            folder = "incabit/img_procesadas",
+            public_id = f"mejor_deteccion_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            overwrite = True,
+            resource_type = "image"
+        )
+
+        # La URL pública que usaremos para ver la imagen desde cualquier lugar
+        url_publica = upload_result.get("secure_url")
+        print(f"Evidencia subida a Cloudinary: {url_publica}")
+
+        # --- RECOMENDACIÓN: AQUÍ DEBERÍAS ACTUALIZAR TU BASE DE DATOS
+        # --- Si tienes el código del incidente, guarda 'url_publica' en la columna 'ruta_imagen'
+        
+        return jsonify({
+            "ok": True, 
+            "mensaje": "Imagen guardada en Cloudinary",
+            "url": url_publica
+        })
+    except Exception as e:
+        print(f"Error al guardar imagen: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+    
 
 # Esta función esta programada para trabajar con RUNPOD
 @app.route("/api/emergencia/procesar-frame", methods=["POST"])

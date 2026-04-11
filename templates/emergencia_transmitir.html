@@ -325,6 +325,21 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (mejorFrameProcesado) {
+            fetch("/api/emergencia/guardar-mejor-frame", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ imagen_final: mejorFrameProcesado })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.ok) {
+                    console.log("Copia de seguridad guardada en el servidor.");
+                    console.log("URL de respaldo:", data.url);
+                }
+                
+            })
+            .catch(err => console.error("Error en backup automático:", err));
+            
             finalImagen.src = mejorFrameProcesado;
             finalImagen.style.display = "block";
             
