@@ -707,7 +707,7 @@ def api_guardar_mejor_frame():
         # Subir directamente a Cloudinary (acepta el string base64 tal cual)
         upload_result = cloudinary.uploader.upload(
             frame_b64,
-            folder = "incabit/img_procesadas",
+            folder = "incabit/uploads/images_transmission",
             public_id = f"mejor_deteccion_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
             overwrite = True,
             resource_type = "image"
