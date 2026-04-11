@@ -69,7 +69,7 @@ db = SQLAlchemy(app)
 # =========================================================
 # CONFIGURACIÓN UPLOADS
 # =========================================================
-UPLOAD_FOLDER = os.path.join("static", "uploads", "emergencias")
+UPLOAD_FOLDER = os.path.join("static", "uploads", "emergency_report")
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -86,14 +86,14 @@ YOLO_CONFIDENCE = 0.5
 
 # Clases COCO seleccionadas:
 # 0 person, 2 car, 3 motorcycle, 5 bus, 7 truck
-YOLO_CLASSES = [0, 2, 3, 5, 7, 16]
+YOLO_CLASSES = [0, 1, 2, 3, 5, 7, 16]
 
 yolo_model = None
 
 # =========================================================
 # CONFIGURACIÓN TRANSMISIÓN
 # =========================================================
-TRANSMISSION_DURATION_SECONDS = 30
+TRANSMISSION_DURATION_SECONDS = 24
 TRANSMISSION_GRACE_SECONDS = 5
 
 # =========================================================
@@ -625,7 +625,6 @@ def api_procesar_frame_openvino():
                     y1 = int(yc - hh/2)
                     x2 = int(xc + ww/2)
                     y2 = int(yc + hh/2)
-                    
                     boxes.append([x1, y1, x2, y2])
                     confidences.append(float(conf))
                     class_ids.append(int(class_id))
@@ -640,6 +639,7 @@ def api_procesar_frame_openvino():
         conteo_grupos = {
             "personas": 0,
             "vehiculos": 0,
+            "perros":0,
             "otros": 0
         }
 
@@ -656,6 +656,8 @@ def api_procesar_frame_openvino():
                 # Lógica de agrupación de conteo
                 if clase_real == 'persona':
                     conteo_grupos["personas"] += 1
+                elif clase_real == 'perro':
+                    conteo_grupos["perros"] += 1
                 elif clase_real in GRUPO_VEHICULOS:
                     conteo_grupos["vehiculos"] += 1
                 elif clase_real in MIS_CLASES:
@@ -673,7 +675,7 @@ def api_procesar_frame_openvino():
 
 # Función para guardar las imagenes generadas posterior a la transmisión de 30 segundos
 # 1. Crear carpeta para los mejores frames si no existe
-MEJORES_FRAMES_FOLDER = os.path.join("static", "uploads", "incabit_images_transmission")
+MEJORES_FRAMES_FOLDER = os.path.join("static", "uploads", "images_transmission")
 # MEJORES_FRAMES_FOLDER = os.environ.get("CLOUDINARY_FOLDER"),
 os.makedirs(MEJORES_FRAMES_FOLDER, exist_ok=True)
 

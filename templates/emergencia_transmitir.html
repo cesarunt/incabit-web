@@ -24,7 +24,8 @@
                 <div id="final-resumen-items" style="margin-top: 5px; font-size: 16px; display: inline-flex;">
                     <span id="fila-final-personas"> 👤 : <b id="final-personas">0</b></span> &nbsp;
                     <span id="fila-final-vehiculos">🚗 : <b id="final-vehiculos">0</b></span> &nbsp;
-                    <span id="fila-final-otros">    📦 : <b id="final-otros">0</b></span>
+                    <span id="fila-final-perros"> 🐶 : <b id="final-perros">0</b></span> &nbsp;
+                    <span id="fila-final-otros">  📦 : <b id="final-otros">0</b></span>
                 </div>
 
                 <div style="margin-top: 22px;">
@@ -57,10 +58,10 @@
                 <canvas id="canvas-deteccion" 
                         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; pointer-events: none; z-index: 10;">
                 </canvas>
-                <div id="lista-deteccion-lateral" style="position: absolute; top: 20px; right: 20px; z-index: 20; background: rgba(0, 0, 0, 0.6); 
+                <div id="lista-deteccion-lateral" style="position: absolute; top: 6px; right: 4px; z-index: 20; background: rgba(0, 0, 0, 0.6); 
                         color: white; padding: 15px; border-radius: 10px; font-family: 'Courier New', Courier, monospace; text-align: left; 
                         min-width: 150px; border-left: 3px solid #0071c5; display: none;">
-                    <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 8px; border-bottom: 1px solid #444;">DETECCIONES</div>
+                    <div style="font-size: 0.85rem; color: #FFF; margin-bottom: 7px; border-bottom: 1px solid #666;">DETECCIONES</div>
                     <div id="items-deteccion-vertical"></div>
                 </div>
             </div>
@@ -71,8 +72,9 @@
 
             <div style="margin-top: 12px; text-align: center;" hidden>
                 <p>
-                    👤 Personas: <b id="conteo-personas">0</b> &nbsp;&nbsp; 
-                    🚗 Vehículos: <b id="conteo-vehiculos">0</b> &nbsp;&nbsp; 
+                    👤 Personas: <b id="conteo-personas">0</b> 
+                    🚗 Vehículos: <b id="conteo-vehiculos">0</b> 
+                    🐶 Perros: <b id="conteo-perros">0</b> 
                     📦 Otros: <b id="conteo-otros">0</b>
                 </p>
             </div>
@@ -122,28 +124,28 @@ document.addEventListener("DOMContentLoaded", function () {
     const canvasDeteccion = document.getElementById("canvas-deteccion");
     const ctx = canvasDeteccion.getContext("2d");
 
-    // const resultadoImagen = document.getElementById("resultado-imagen");
-    // const placeholderResultado = document.getElementById("placeholder-resultado");
     const listaDetecciones = document.getElementById("lista-detecciones");
     const estadoProceso = document.getElementById("estado-proceso");
     const estadoCamara = document.getElementById("estado-camara");
 
     const conteoPersonas = document.getElementById("conteo-personas");
     const conteoVehiculos = document.getElementById("conteo-vehiculos");
-    // const conteoPerros = document.getElementById("conteo-perros");
+    const conteoPerros = document.getElementById("conteo-perros");
     const conteoOtros = document.getElementById("conteo-otros");
     const filaFinalPersonas = document.getElementById("fila-final-personas");
     const filaFinalVehiculos = document.getElementById("fila-final-vehiculos");
+    const filaFinalPerros = document.getElementById("fila-final-perros");
     const filaFinalOtros = document.getElementById("fila-final-otros");
 
     const resultadoFinal = document.getElementById("resultado-final");
     const finalPersonas = document.getElementById("final-personas");
     const finalVehiculos = document.getElementById("final-vehiculos");
+    const finalPerros = document.getElementById("final-perros");
     const finalOtros = document.getElementById("final-otros");
     const finalImagen = document.getElementById("final-imagen");
     const btnDescargarImagen = document.getElementById("btn-descargar-imagen");
 
-    const INTERVALO_MS = 1000;
+    const INTERVALO_MS = 500;
     let DURACION_SEGUNDOS = 24;
     let motorActual = "ultralytics"; // "openvino" o "ultralytics"
 
@@ -159,6 +161,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let mejorConteo = {
         personas: 0,
         vehiculos: 0,
+        perros: 0,
         otros: 0,
         total: 0
     };
@@ -166,6 +169,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let ultimoResumen = {
         personas: 0,
         vehiculos: 0,
+        perros: 0,
         otros: 0
     };
 
@@ -180,27 +184,6 @@ document.addEventListener("DOMContentLoaded", function () {
         panelTransmision.style.display = "block";
     }
 
-    // function dibujarDetecciones(conteo) {
-    //     canvasDeteccion.width = video.videoWidth;
-    //     canvasDeteccion.height = video.videoHeight;
-    //     ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
-
-    //     if (!conteo) return;
-    //     // 1. Construir el mensaje resumido
-    //     const texto = `Personas : ${conteo.personas}     Vehículos : ${conteo.vehiculos}    Otros objetos: ${conteo.otros}`;
-    //     // 2. Configurar estilo de fuente
-    //     ctx.font = "16px Arial";
-    //     const anchoTexto = ctx.measureText(texto).width;
-    //     // 3. Dibujar un fondo negro semi-transparente para que el amarillo resalte
-    //     ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-    //     // Dibujamos una barra en la parte superior
-    //     ctx.fillRect(0, 0, canvasDeteccion.width, 30);
-    //     // 4. Dibujar el texto en AMARILLO llamativo
-    //     ctx.fillStyle = "#FFFF00"; // Amarillo neón
-    //     // Centramos el texto horizontalmente
-    //     const xPos = (canvasDeteccion.width / 2) - (anchoTexto / 2);
-    //     ctx.fillText(texto, xPos, 19);
-    // }
 
     function dibujarDetecciones(conteo) {
         canvasDeteccion.width = video.videoWidth;
@@ -259,6 +242,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         conteoPersonas.textContent = "0";
         conteoVehiculos.textContent = "0";
+        conteoPerros.textContent = "0";
         conteoOtros.textContent = "0";
 
         if (listaDetecciones) {
@@ -315,17 +299,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const personasFinal = mejorConteo.personas || ultimoResumen.personas || 0;
         const vehiculosFinal = mejorConteo.vehiculos || ultimoResumen.vehiculos || 0;
+        const perrosFinal = mejorConteo.perros || ultimoResumen.perros || 0;
         const otrosFinal = mejorConteo.otros || ultimoResumen.otros || 0;
 
         finalPersonas.textContent = personasFinal;
         finalVehiculos.textContent = vehiculosFinal;
+        finalPerros.textContent = perrosFinal;
         finalOtros.textContent = otrosFinal;
 
         filaFinalPersonas.style.display = personasFinal > 0 ? "block" : "none";
         filaFinalVehiculos.style.display = vehiculosFinal > 0 ? "block" : "none";
+        filaFinalPerros.style.display = perrosFinal > 0 ? "block" : "none";
         filaFinalOtros.style.display = otrosFinal > 0 ? "block" : "none";
 
-        if (personasFinal === 0 && vehiculosFinal === 0 && otrosFinal === 0) {
+        if (personasFinal === 0 && vehiculosFinal === 0 && perrosFinal === 0 && otrosFinal === 0) {
             filaFinalPersonas.style.display = "block";
             filaFinalPersonas.innerHTML = "Sin objetos detectados";
         }
@@ -455,6 +442,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         // Iconos decorativos según el tipo
                         let icono = "•";
                         if (nombre === "persona") icono = "👤";
+                        else if (nombre === "perro") icono = "🐶"; 
                         else if (['carro', 'moto', 'bus', 'bicicleta', 'camion'].includes(nombre)) icono = "🚗";
                         else icono = "📦";
                         htmlLista += `<div style="margin-bottom: 5px; font-size: 0.9rem;">
@@ -472,10 +460,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     // 1. Actualizar los contadores grandes (opcional si ya tienes el texto)
                     conteoPersonas.textContent = data.conteo.personas;
                     conteoVehiculos.textContent = data.conteo.vehiculos;
+                    conteoPerros.textContent = data.conteo.perros;
                     conteoOtros.textContent = data.conteo.otros;
 
                     // 2. Lógica del "Mejor Frame" (Aquí SÍ dibujamos los cuadros)
-                    const totalActual = data.conteo.personas + data.conteo.vehiculos + data.conteo.otros;
+                    const totalActual = data.conteo.personas + data.conteo.vehiculos + data.conteo.perros + data.conteo.otros;
                     if (totalActual > mejorConteo.total) {
                         mejorConteo = { ...data.conteo, total: totalActual };
 
@@ -539,7 +528,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             estadoProceso.textContent = `Transmisión en curso. Tiempo restante: ${segundosRestantes}s`;
-        }, 1000);
+        }, 800);
     }
 
     function generarNombreImagen() {
@@ -586,6 +575,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Resetear contadores visuales
         conteoPersonas.textContent = "0";
         conteoVehiculos.textContent = "0";
+        conteoPerros.textContent = "0"
         conteoOtros.textContent = "0";
 
         iniciando = true;
@@ -597,6 +587,7 @@ document.addEventListener("DOMContentLoaded", function () {
         mejorConteo = {
             personas: 0,
             vehiculos: 0,
+            perros: 0,
             otros: 0,
             total: 0
         };
@@ -604,6 +595,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ultimoResumen = {
             personas: 0,
             vehiculos: 0,
+            perros: 0,
             otros: 0
         };
 
