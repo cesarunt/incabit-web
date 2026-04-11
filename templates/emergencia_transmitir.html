@@ -57,6 +57,12 @@
                 <canvas id="canvas-deteccion" 
                         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; pointer-events: none; z-index: 10;">
                 </canvas>
+                <div id="lista-deteccion-lateral" style="position: absolute; top: 20px; right: 20px; z-index: 20; background: rgba(0, 0, 0, 0.6); 
+                        color: white; padding: 15px; border-radius: 10px; font-family: 'Courier New', Courier, monospace; text-align: left; 
+                        min-width: 150px; border-left: 3px solid #0071c5; display: none;">
+                    <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 8px; border-bottom: 1px solid #444;">DETECCIONES</div>
+                    <div id="items-deteccion-vertical"></div>
+                </div>
             </div>
 
             <div id="estado-proceso" style="margin-top: 14px; color: #9ca3af;">
@@ -137,8 +143,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const finalImagen = document.getElementById("final-imagen");
     const btnDescargarImagen = document.getElementById("btn-descargar-imagen");
 
-    const INTERVALO_MS = 500;
-    let DURACION_SEGUNDOS = 30;
+    const INTERVALO_MS = 1000;
+    let DURACION_SEGUNDOS = 24;
     let motorActual = "ultralytics"; // "openvino" o "ultralytics"
 
     let stream = null;
@@ -201,49 +207,49 @@ document.addEventListener("DOMContentLoaded", function () {
         canvasDeteccion.height = video.videoHeight;
         ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
 
-        if (!conteo || conteo.personas === undefined) return;
+        // if (!conteo || conteo.personas === undefined) return;
 
-        // 1. Configuración de estilo y separador
-        ctx.font = "bold 18px Arial";
-        const separador = "   ";
+        // // 1. Configuración de estilo y separador
+        // ctx.font = "bold 18px Arial";
+        // const separador = "   ";
         
-        // 2. Definir los segmentos y sus valores para la lógica de color
-        const segmentos = [
-            { texto: `Personas: ${conteo.personas}`, valor: conteo.personas },
-            { texto: `Vehículos: ${conteo.vehiculos}`, valor: conteo.vehiculos },
-            { texto: `Otros objetos: ${conteo.otros}`, valor: conteo.otros }
-        ];
+        // // 2. Definir los segmentos y sus valores para la lógica de color
+        // const segmentos = [
+        //     { texto: `Personas: ${conteo.personas}`, valor: conteo.personas },
+        //     { texto: `Vehículos: ${conteo.vehiculos}`, valor: conteo.vehiculos },
+        //     { texto: `Otros objetos: ${conteo.otros}`, valor: conteo.otros }
+        // ];
 
-        // 3. Calcular el ancho total de todos los segmentos para centrar el banner
-        let anchoTotal = 0;
-        segmentos.forEach((s, i) => {
-            anchoTotal += ctx.measureText(s.texto).width;
-            if (i < segmentos.length - 1) anchoTotal += ctx.measureText(separador).width;
-        });
+        // // 3. Calcular el ancho total de todos los segmentos para centrar el banner
+        // let anchoTotal = 0;
+        // segmentos.forEach((s, i) => {
+        //     anchoTotal += ctx.measureText(s.texto).width;
+        //     if (i < segmentos.length - 1) anchoTotal += ctx.measureText(separador).width;
+        // });
 
         // 4. Dibujar fondo negro semi-transparente
-        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-        ctx.fillRect(0, 0, canvasDeteccion.width, 45);
+        // ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        // ctx.fillRect(0, 0, canvasDeteccion.width, 35);
 
         // 5. Dibujar cada segmento con su color correspondiente
-        let xPos = (canvasDeteccion.width / 2) - (anchoTotal / 2);
-        const yPos = 30; // Altura del texto dentro del banner
+        // let xPos = (canvasDeteccion.width / 2) - (anchoTotal / 2);
+        // const yPos = 30; // Altura del texto dentro del banner
 
-        segmentos.forEach((s, i) => {
-            // LÓGICA DE COLOR: Verde (#00FF00) si detecta algo, Amarillo (#FFFF00) si es cero
-            ctx.fillStyle = s.valor > 0 ? "#00FF00" : "#FFFF00";
-            ctx.fillText(s.texto, xPos, yPos);
+        // segmentos.forEach((s, i) => {
+        //     // LÓGICA DE COLOR: Verde (#00FF00) si detecta algo, Amarillo (#FFFF00) si es cero
+        //     ctx.fillStyle = s.valor > 0 ? "#00FF00" : "#FFFF00";
+        //     ctx.fillText(s.texto, xPos, yPos);
             
-            // Avanzamos el puntero X según el ancho del texto recién dibujado
-            xPos += ctx.measureText(s.texto).width;
+        //     // Avanzamos el puntero X según el ancho del texto recién dibujado
+        //     xPos += ctx.measureText(s.texto).width;
 
-            // Dibujar el separador siempre en amarillo para mantener la estructura
-            if (i < segmentos.length - 1) {
-                ctx.fillStyle = "#FFFF00";
-                ctx.fillText(separador, xPos, yPos);
-                xPos += ctx.measureText(separador).width;
-            }
-        });
+        //     // Dibujar el separador siempre en amarillo para mantener la estructura
+        //     if (i < segmentos.length - 1) {
+        //         ctx.fillStyle = "#FFFF00";
+        //         ctx.fillText(separador, xPos, yPos);
+        //         xPos += ctx.measureText(separador).width;
+        //     }
+        // });
     }
 
     function limpiarPanel() {
@@ -431,6 +437,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (data.ok) {
                 const listaObjetos = data.objects || [];
+                const contenedorLateral = document.getElementById("lista-deteccion-lateral");
+                const itemsVertical = document.getElementById("items-deteccion-vertical");
+                
+                if (listaObjetos.length > 0) {
+                    contenedorLateral.style.display = "block";
+                    
+                    // 1. Contar objetos por su nombre de clase
+                    const conteoDetallado = {};
+                    listaObjetos.forEach(obj => {
+                        const nombre = obj.clase.toLowerCase();
+                        conteoDetallado[nombre] = (conteoDetallado[nombre] || 0) + 1;
+                    });
+                    // 2. Generar el HTML de la lista vertical
+                    let htmlLista = "";
+                    for (const [nombre, cantidad] of Object.entries(conteoDetallado)) {
+                        // Iconos decorativos según el tipo
+                        let icono = "•";
+                        if (nombre === "persona") icono = "👤";
+                        else if (['carro', 'moto', 'bus', 'bicicleta', 'camion'].includes(nombre)) icono = "🚗";
+                        else icono = "📦";
+                        htmlLista += `<div style="margin-bottom: 5px; font-size: 0.9rem;">
+                                        ${icono} ${nombre} (${cantidad})
+                                    </div>`;
+                    }
+                    itemsVertical.innerHTML = htmlLista;
+                } else {
+                    contenedorLateral.style.display = "none";
+                }
+                
                 dibujarDetecciones(data.conteo); // Esto ahora solo limpia el canvas
 
                 if (data.conteo) {
