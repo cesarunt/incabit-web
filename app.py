@@ -673,9 +673,8 @@ def api_procesar_frame_openvino():
 
 # Función para guardar las imagenes generadas posterior a la transmisión de 30 segundos
 # 1. Crear carpeta para los mejores frames si no existe
-# MEJORES_FRAMES_FOLDER = os.path.join("static", "uploads", "incabit_image_transmission")
-MEJORES_FRAMES_FOLDER = os.environ.get("CLOUDINARY_FOLDER"),
-
+MEJORES_FRAMES_FOLDER = os.path.join("static", "uploads", "incabit_images_transmission")
+# MEJORES_FRAMES_FOLDER = os.environ.get("CLOUDINARY_FOLDER"),
 os.makedirs(MEJORES_FRAMES_FOLDER, exist_ok=True)
 
 @app.route("/api/emergencia/guardar-mejor-frame", methods=["POST"])
