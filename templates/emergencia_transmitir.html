@@ -284,10 +284,11 @@ document.addEventListener("DOMContentLoaded", function () {
         const perrosFinal = mejorConteo.perros || ultimoResumen.perros || 0;
         const otrosFinal = mejorConteo.otros || ultimoResumen.otros || 0;
 
-        finalPersonas.textContent = personasFinal;
-        finalVehiculos.textContent = vehiculosFinal;
-        finalPerros.textContent = perrosFinal;
-        finalOtros.textContent = otrosFinal;
+        finalPersonas.textContent = "...";
+        finalVehiculos.textContent = "...";
+        finalPerros.textContent = "...";
+        finalOtros.textContent = "...";
+        estadoProceso.textContent = "Generando reporte de alta precisión...";
 
         filaFinalPersonas.style.display = personasFinal > 0 ? "block" : "none";
         filaFinalVehiculos.style.display = vehiculosFinal > 0 ? "block" : "none";
@@ -383,7 +384,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             } catch (err) {
                 console.error("Error en refinamiento:", err);
-                // Si falla el refinamiento, mostrar la imagen original al menos
+                // Si falla, mostramos los últimos valores conocidos
+                finalPersonas.textContent = mejorConteo.personas;
+                finalVehiculos.textContent = mejorConteo.vehiculos;
+                finalPerros.textContent = mejorConteo.perros;
+                finalOtros.textContent = mejorConteo.otros;
+                // Y ademas mostramos la imagen original 
                 finalImagen.src = mejorFrameProcesado;
                 finalImagen.style.display = "block";
             }
@@ -458,7 +464,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Dibujamos el video en el canvas temporal LIMPIO
         tCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
         // Extraemos la imagen del canvas limpio para enviarla a Render/RunPod
-        const frameData = tempCanvas.toDataURL("image/jpeg", 0.65);
+        const frameData = tempCanvas.toDataURL("image/jpeg", 0.85);
 
         // ELEGIR ENDPOINT
         const endpoint = (motorActual === "openvino") 
@@ -534,7 +540,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         ctxLimpio.drawImage(video, 0, 0, canvasLimpio.width, canvasLimpio.height);
 
                         // Guardamos esta foto "pura" para procesarla al final
-                        mejorFrameProcesado = canvasLimpio.toDataURL("image/jpeg", 0.9);
+                        mejorFrameProcesado = canvasLimpio.toDataURL("image/jpeg", 0.85);
                         console.log("Nueva mejor captura limpia guardada.");
                     }
                 }
