@@ -82,7 +82,7 @@ app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB
 # CONFIGURACIÓN YOLO
 # =========================================================
 YOLO_MODEL_NAME = "yolo11n.pt"
-YOLO_CONFIDENCE = 0.5
+YOLO_CONFIDENCE = 0.45
 
 # Clases COCO seleccionadas:
 # 0 person, 2 car, 3 motorcycle, 5 bus, 7 truck
@@ -618,20 +618,20 @@ def api_procesar_frame_openvino():
             scores = row[4:]
             class_id = np.argmax(scores)
             conf = scores[class_id]
-            if conf > 0.5:
+            if conf > 0.45:
                 nombre = COCO_CLASSES[class_id] if class_id < len(COCO_CLASSES) else "objeto"
                 if nombre in MIS_CLASES:
                     xc, yc, ww, hh = row[:4]
-                    # Coordenadas en el espacio de 640x640
-                    x1 = int(xc - ww/2)
-                    y1 = int(yc - hh/2)
-                    x2 = int(xc + ww/2)
-                    y2 = int(yc + hh/2)
-                    boxes.append([x1, y1, x2, y2])
+                    # Coordenadas para el cálculo
+                    x = int(xc - ww/2)
+                    y = int(yc - hh/2)
+                    w = int(ww)
+                    h = int(hh)
+                    boxes.append([x, y, w, h])
                     confidences.append(float(conf))
                     class_ids.append(int(class_id))
 
-        indices = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
+        indices = cv2.dnn.NMSBoxes(boxes, confidences, 0.45, 0.45)
         
         final_objs = []
 
@@ -660,10 +660,15 @@ def api_procesar_frame_openvino():
                     conteo_grupos["otros"] += 1
 
                 # CORRECCIÓN AQUÍ: No sumamos de nuevo, usamos x1, y1, x2, y2 directamente
+                # final_objs.append({
+                #     "clase": clase_real,
+                #     "confianza": round(confidences[i], 2),
+                #     "bbox": [boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3]]
+                # })
                 final_objs.append({
                     "clase": clase_real,
                     "confianza": round(confidences[i], 2),
-                    "bbox": [boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3]]
+                    "bbox": [boxes[i][0], boxes[i][1], boxes[i][0] + boxes[i][2], boxes[i][1] + boxes[i][3]]
                 })
 
         return jsonify({
