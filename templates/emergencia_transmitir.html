@@ -3,7 +3,6 @@
 
 <section class="page-hero">
     <div class="container">
-        <span class="eyebrow">Transmitir Emergencia</span>
         <h2>Transmisión en vivo</h2>
 
         <!-- Estado inicial -->
@@ -146,7 +145,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const btnDescargarImagen = document.getElementById("btn-descargar-imagen");
 
     const INTERVALO_MS = 500;
-    let DURACION_SEGUNDOS = 24;
+    let DURACION_SEGUNDOS = 0;       // Este valor no requiere valor inicial, el valor viene del backend
     let motorActual = "ultralytics"; // "openvino" o "ultralytics"
 
     let stream = null;
@@ -258,7 +257,142 @@ document.addEventListener("DOMContentLoaded", function () {
         video.srcObject = null;
     }
 
+
     async function finalizarTransmision(mensaje) {
+        transmisionActiva = false;
+        
+        // 1. Detener procesos de tiempo primero
+        if (intervalId) clearInterval(intervalId);
+        if (countdownId) clearInterval(countdownId);
+
+        // 2. IMPORTANTE: NO detener cámara aún si queremos usar video.videoWidth
+        // O mejor aún, usaremos las dimensiones de la imagen guardada para mayor seguridad
+        detenerCamara();
+
+        // Mostrar el mensaje de fin y el panel de resultados
+        panelTransmision.style.display = "none";
+        bloqueInicial.style.display = "flex";
+        mensajeFinal.style.display = "block";
+        resultadoFinal.style.display = "block";
+
+        const p = mensajeFinal.querySelector("p b");
+        if (p) p.textContent = mensaje || "La transmisión ha finalizado";
+
+        // Actualizar contadores del resumen visual
+        const personasFinal = mejorConteo.personas || ultimoResumen.personas || 0;
+        const vehiculosFinal = mejorConteo.vehiculos || ultimoResumen.vehiculos || 0;
+        const perrosFinal = mejorConteo.perros || ultimoResumen.perros || 0;
+        const otrosFinal = mejorConteo.otros || ultimoResumen.otros || 0;
+
+        finalPersonas.textContent = personasFinal;
+        finalVehiculos.textContent = vehiculosFinal;
+        finalPerros.textContent = perrosFinal;
+        finalOtros.textContent = otrosFinal;
+
+        filaFinalPersonas.style.display = personasFinal > 0 ? "block" : "none";
+        filaFinalVehiculos.style.display = vehiculosFinal > 0 ? "block" : "none";
+        filaFinalPerros.style.display = perrosFinal > 0 ? "block" : "none";
+        filaFinalOtros.style.display = otrosFinal > 0 ? "block" : "none";
+
+        if (personasFinal === 0 && vehiculosFinal === 0 && perrosFinal === 0 && otrosFinal === 0) {
+            filaFinalPersonas.style.display = "block";
+            filaFinalPersonas.innerHTML = "Sin objetos detectados";
+        }
+        setTimeout(() => {
+            mensajeFinal.style.display = "none";
+        }, 8000);
+
+        // --- REPROCESAMIENTO DE PRECISIÓN ---
+        if (mejorFrameProcesado) {
+            estadoProceso.textContent = "Refinando precisión del reporte final...";
+            
+            try {
+                const res = await fetch("/api/emergencia/procesar-frame-openvino", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ frame: mejorFrameProcesado })
+                });
+                const data = await res.json();
+
+                if (data.ok) {
+                    const imgBase = new Image();
+                    imgBase.src = mejorFrameProcesado;
+                    
+                    imgBase.onload = () => {
+                        // CREAR CANVAS CON EL TAMAÑO DE LA IMAGEN REAL
+                        const canvasFinal = document.createElement("canvas");
+                        canvasFinal.width = imgBase.width;
+                        canvasFinal.height = imgBase.height;
+                        const tempCtx = canvasFinal.getContext("2d");
+
+                        // Dibujar la foto base
+                        tempCtx.drawImage(imgBase, 0, 0);
+
+                        // Escalar cuadros (OpenVINO usa 640x640)
+                        const sX = imgBase.width / 640;
+                        const sY = imgBase.height / 640;
+
+                        // Dibujar cuadros refinados
+                        data.objects.forEach(obj => {
+                            const [x1, y1, x2, y2] = obj.bbox;
+                            
+                            // CORRECCIÓN: Definir el color según el grupo
+                            // Rojo para personas, Azul para todo lo demás (Vehículos y Otros)
+                            const esPersona = (obj.clase === 'persona' || obj.clase === 'person');
+                            const color = esPersona ? "#FF3300" : "#00AAFF";
+                            
+                            tempCtx.strokeStyle = color;
+                            tempCtx.lineWidth = 6;
+                            tempCtx.strokeRect(x1 * sX, y1 * sY, (x2 - x1) * sX, (y2 - y1) * sY);
+                            
+                            tempCtx.fillStyle = color;
+                            tempCtx.font = "bold 24px Arial"; // Fuente grande para el reporte
+                            tempCtx.fillText(`${obj.clase.toUpperCase()}`, (x1 * sX), (y1 * sY) - 12);
+                        });
+
+                        // Sello de tiempo ÚNICO
+                        const fecha = new Date().toLocaleString('es-PE');
+                        tempCtx.fillStyle = "white";
+                        tempCtx.font = "bold 20px Arial";
+                        tempCtx.fillText(`Incabit - ${fecha}`, 20, canvasFinal.height - 30);
+
+                        // Resultado final para mostrar y descargar
+                        const urlFinal = canvasFinal.toDataURL("image/jpeg", 0.95);
+                        finalImagen.src = urlFinal;
+                        finalImagen.style.display = "block";
+                        btnDescargarImagen.href = urlFinal;
+                        btnDescargarImagen.style.display = "inline-flex";
+                        btnDescargarImagen.download = generarNombreImagen();
+                        
+                        guardarEnCloudinary(urlFinal);
+                    };
+                }
+            } catch (err) {
+                console.error("Error en refinamiento:", err);
+                // Si falla el refinamiento, mostrar la imagen original al menos
+                finalImagen.src = mejorFrameProcesado;
+                finalImagen.style.display = "block";
+            }
+        }
+        limpiarPanel();
+
+        iniciando = false;
+        btnIniciarOpenVINO.disabled = false;
+        btnIniciarOpenVINO.style.opacity = "1";
+    }
+
+    function guardarEnCloudinary(imagenB64) {
+        fetch("/api/emergencia/guardar-mejor-frame", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imagen_final: imagenB64 })
+        })
+        .then(res => res.json())
+        .then(data => { if(data.ok) console.log("Reporte guardado en Cloudinary con éxito."); });
+    }
+
+    
+    async function finalizarTransmision__(mensaje) {
         transmisionActiva = false;
 
         if (intervalId) {
@@ -350,6 +484,7 @@ document.addEventListener("DOMContentLoaded", function () {
         btnIniciarOpenVINO.disabled = false;
         btnIniciarOpenVINO.style.opacity = "1";
     }
+
 
     async function iniciarCamara() {
         try {
@@ -465,42 +600,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     // 2. Lógica del "Mejor Frame" (Aquí SÍ dibujamos los cuadros)
                     const totalActual = data.conteo.personas + data.conteo.vehiculos + data.conteo.perros + data.conteo.otros;
+                    
                     if (totalActual > mejorConteo.total) {
                         mejorConteo = { ...data.conteo, total: totalActual };
 
-                        const canvasFinal = document.createElement("canvas");
-                        canvasFinal.width = video.videoWidth;
-                        canvasFinal.height = video.videoHeight;
-                        const tempCtx = canvasFinal.getContext("2d");
+                        // CAPTURA LIMPIA: Creamos un canvas solo para guardar la foto real
+                        const canvasLimpio = document.createElement("canvas");
+                        canvasLimpio.width = video.videoWidth;
+                        canvasLimpio.height = video.videoHeight;
+                        const ctxLimpio = canvasLimpio.getContext("2d");
 
-                        // Dibujamos la imagen real
-                        tempCtx.drawImage(video, 0, 0, canvasFinal.width, canvasFinal.height);
+                        // Dibujamos SOLO el video, sin cuadros ni texto
+                        ctxLimpio.drawImage(video, 0, 0, canvasLimpio.width, canvasLimpio.height);
 
-                        const sX = video.videoWidth / 640;
-                        const sY = video.videoHeight / 640;
-
-                        // DIBUJAMOS LOS CUADROS Y NOMBRES SOLO EN ESTA IMAGEN ESTÁTICA
-                        listaObjetos.forEach(obj => {
-                            const [x1, y1, x2, y2] = obj.bbox;
-                            const color = (obj.clase === 'persona' || obj.clase === 'person') ? "#FF4400" : "#00AAFF";
-                            
-                            tempCtx.strokeStyle = color;
-                            tempCtx.lineWidth = 4;
-                            tempCtx.strokeRect(x1 * sX, y1 * sY, (x2 - x1) * sX, (y2 - y1) * sY);
-
-                            // Nombre y Confianza (Exactos para este segundo)
-                            tempCtx.fillStyle = color;
-                            tempCtx.font = "bold 16px Arial";
-                            tempCtx.fillText(`${obj.clase.toUpperCase()} ${Math.round(obj.confianza * 100)}%`, (x1 * sX), (y1 * sY) - 10);
-                        });
-
-                        // Sello de tiempo de Los Olivos
-                        const fecha = new Date().toLocaleString('es-PE');
-                        tempCtx.fillStyle = "white";
-                        tempCtx.font = "bold 18px Arial";
-                        tempCtx.fillText(fecha, 20, canvasFinal.height - 30);
-
-                        mejorFrameProcesado = canvasFinal.toDataURL("image/jpeg", 0.9);
+                        // Guardamos esta foto "pura" para procesarla al final
+                        mejorFrameProcesado = canvasLimpio.toDataURL("image/jpeg", 0.9);
+                        console.log("Nueva mejor captura limpia guardada.");
                     }
                 }
                 estadoProceso.textContent = `Frame procesado. Tiempo restante: ${segundosRestantes}s`;
@@ -551,10 +666,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Función genérica que contiene toda la lógica que ya tenías
     async function iniciarFlujoTransmision(motor) {
+
         if (transmisionActiva || iniciando) return;
 
         motorActual = motor; // Guardamos la elección
-        console.log("Iniciando transmisión vía:", motorActual);
 
         // RESET DE ESTADOS DE CONTROL
         procesando = false; 

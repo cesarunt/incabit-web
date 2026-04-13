@@ -589,11 +589,13 @@ def api_procesar_frame_cpu():
 # =========================================================
 @app.route("/api/emergencia/procesar-frame-openvino", methods=["POST"])
 def api_procesar_frame_openvino():
+
     model = get_openvino_model()
     if not model:
         return jsonify({"ok": False, "error": "Motor OpenVINO no disponible"}), 500
 
-    data = request.get_json(silent=True) or {}
+    data = request.get_json() or {}
+    # frame_b64 = data.get("imagen_final")
     frame_data = data.get("frame")
     
     try:
@@ -646,13 +648,7 @@ def api_procesar_frame_openvino():
         if len(indices) > 0:
             for i in indices.flatten():
                 clase_real = COCO_CLASSES[class_ids[i]]
-                # CORRECCIÓN AQUÍ: No sumamos de nuevo, usamos x1, y1, x2, y2 directamente
-                final_objs.append({
-                    "clase": clase_real,
-                    "confianza": round(confidences[i], 2),
-                    "bbox": [boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3]]
-                })
-                # if clase_real in conteo: conteo[clase_real] += 1
+                
                 # Lógica de agrupación de conteo
                 if clase_real == 'persona':
                     conteo_grupos["personas"] += 1
@@ -662,6 +658,13 @@ def api_procesar_frame_openvino():
                     conteo_grupos["vehiculos"] += 1
                 elif clase_real in MIS_CLASES:
                     conteo_grupos["otros"] += 1
+
+                # CORRECCIÓN AQUÍ: No sumamos de nuevo, usamos x1, y1, x2, y2 directamente
+                final_objs.append({
+                    "clase": clase_real,
+                    "confianza": round(confidences[i], 2),
+                    "bbox": [boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3]]
+                })
 
         return jsonify({
             "ok": True,
