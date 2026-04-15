@@ -52,7 +52,7 @@
         <article class="card">
             <div class="contenedor-video" style="position: relative; width: 100%; max-width: 640px; margin: 0 auto;">
                 <video id="video" autoplay playsinline muted 
-                    style="width: 100%; border-radius: 14px; background: #111; object-fit: cover; display: block;">
+                    style="width: 100%; border-radius: 14px; background: #111; object-fit: contain; display: block;">
                 </video>
                 <canvas id="canvas-deteccion" 
                         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; pointer-events: none; z-index: 10;">
@@ -261,12 +261,10 @@ document.addEventListener("DOMContentLoaded", function () {
     async function finalizarTransmision(mensaje) {
         transmisionActiva = false;
         
-        // 1. Detener procesos de tiempo primero
+        // Detener procesos de tiempo primero
         if (intervalId) clearInterval(intervalId);
         if (countdownId) clearInterval(countdownId);
 
-        // 2. IMPORTANTE: NO detener cámara aún si queremos usar video.videoWidth
-        // O mejor aún, usaremos las dimensiones de la imagen guardada para mayor seguridad
         detenerCamara();
 
         // Mostrar el mensaje de fin y el panel de resultados
@@ -288,7 +286,7 @@ document.addEventListener("DOMContentLoaded", function () {
         finalVehiculos.textContent = "...";
         finalPerros.textContent = "...";
         finalOtros.textContent = "...";
-        estadoProceso.textContent = "Generando reporte de alta precisión...";
+        estadoProceso.textContent = "Refinando precisión del reporte...";
 
         filaFinalPersonas.style.display = personasFinal > 0 ? "block" : "none";
         filaFinalVehiculos.style.display = vehiculosFinal > 0 ? "block" : "none";
@@ -350,19 +348,26 @@ document.addEventListener("DOMContentLoaded", function () {
                         // Dibujar cuadros refinados
                         data.objects.forEach(obj => {
                             const [x1, y1, x2, y2] = obj.bbox;
+                            const clase = obj.clase.toLowerCase();
+
+                            // 1. DEFINICIÓN DE LA PALETA DE COLORES SEGÚN CATEGORÍA
+                            let color = "#808080"; // Gris (Otros objetos) por defecto
                             
-                            // CORRECCIÓN: Definir el color según el grupo
-                            // Rojo para personas, Azul para todo lo demás (Vehículos y Otros)
-                            const esPersona = (obj.clase === 'persona' || obj.clase === 'person');
-                            const color = esPersona ? "#FF3300" : "#00AAFF";
-                            
+                            if (clase === 'persona' || clase === 'person') {
+                                color = "#FF3300"; // Rojo
+                            } else if (['bicicleta', 'carro', 'moto', 'bus', 'camion', 'bicycle', 'car', 'motorcycle', 'bus', 'truck'].includes(clase)) {
+                                color = "#00AAFF"; // Azul (Vehículos)
+                            } else if (clase === 'perro' || clase === 'dog') {
+                                color = "#FFFF00"; // Amarillo (Perros)
+                            }
+                                                       
                             tempCtx.strokeStyle = color;
-                            tempCtx.lineWidth = 6;
+                            tempCtx.lineWidth = 5;
                             tempCtx.strokeRect(x1 * sX, y1 * sY, (x2 - x1) * sX, (y2 - y1) * sY);
                             
                             tempCtx.fillStyle = color;
-                            tempCtx.font = "bold 24px Arial"; // Fuente grande para el reporte
-                            tempCtx.fillText(`${obj.clase.toUpperCase()}`, (x1 * sX), (y1 * sY) - 12);
+                            tempCtx.font = "bold 22px Arial"; // Fuente grande para el reporte
+                            tempCtx.fillText(`${obj.clase.toUpperCase()}`, (x1 * sX), (y1 * sY) - 11);
                         });
 
                         // Sello de tiempo ÚNICO
@@ -372,7 +377,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         tempCtx.fillText(`Incabit - ${fecha}`, 20, canvasFinal.height - 30);
 
                         // Resultado final para mostrar y descargar
-                        const urlFinal = canvasFinal.toDataURL("image/jpeg", 0.85);
+                        const urlFinal = canvasFinal.toDataURL("image/jpeg", 0.8);
                         finalImagen.src = urlFinal;
                         finalImagen.style.display = "block";
                         btnDescargarImagen.href = urlFinal;
@@ -464,7 +469,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Dibujamos el video en el canvas temporal LIMPIO
         tCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
         // Extraemos la imagen del canvas limpio para enviarla a Render/RunPod
-        const frameData = tempCanvas.toDataURL("image/jpeg", 0.85);
+        const frameData = tempCanvas.toDataURL("image/jpeg", 0.8);
 
         // ELEGIR ENDPOINT
         const endpoint = (motorActual === "openvino") 
@@ -540,7 +545,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         ctxLimpio.drawImage(video, 0, 0, canvasLimpio.width, canvasLimpio.height);
 
                         // Guardamos esta foto "pura" para procesarla al final
-                        mejorFrameProcesado = canvasLimpio.toDataURL("image/jpeg", 0.85);
+                        mejorFrameProcesado = canvasLimpio.toDataURL("image/jpeg", 0.8);
                         console.log("Nueva mejor captura limpia guardada.");
                     }
                 }

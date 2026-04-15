@@ -124,6 +124,7 @@ MIS_CLASES = ['persona', 'bicicleta', 'carro', 'moto', 'bus', 'camion', 'semafor
                  'pajaro', 'gato', 'mochila', 'cartera', 'maleta', 'pelota', 'botella', 'copa', 'taza', 'tenedor', 
                  'cuchillo', 'cuchara', 'pastel', 'silla', 'sofá', 'planta', 'cama', 'comedor', 'baño', 'tv', 'laptop', 
                  'mouse', 'teclado', 'celular', 'horno', 'refrigerador', 'libro', 'reloj', 'florero']
+YOLO_CONF = 0.4
 
 def get_openvino_model():
     global OV_CORE, OV_MODEL
@@ -618,7 +619,7 @@ def api_procesar_frame_openvino():
             scores = row[4:]
             class_id = np.argmax(scores)
             conf = scores[class_id]
-            if conf > 0.45:
+            if conf > YOLO_CONF:
                 nombre = COCO_CLASSES[class_id] if class_id < len(COCO_CLASSES) else "objeto"
                 if nombre in MIS_CLASES:
                     xc, yc, ww, hh = row[:4]
@@ -631,7 +632,7 @@ def api_procesar_frame_openvino():
                     confidences.append(float(conf))
                     class_ids.append(int(class_id))
 
-        indices = cv2.dnn.NMSBoxes(boxes, confidences, 0.45, 0.45)
+        indices = cv2.dnn.NMSBoxes(boxes, confidences, YOLO_CONF, 0.5)
         
         final_objs = []
 
