@@ -742,7 +742,7 @@ def api_guardar_mejor_frame():
     
 
 # Esta función esta programada para trabajar con RUNPOD
-@app.route("/api/emergencia/procesar-frame", methods=["POST"])
+@app.route("/api/emergencia/procesar-frame-runpod", methods=["POST"])
 def api_procesar_frame():
     control = liberar_transmision_si_expirada()
 
