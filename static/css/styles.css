@@ -63,3 +63,12 @@ input,textarea{width:100%;margin-top:.45rem;border-radius:14px;border:1px solid 
 .flash-message { margin-bottom: 18px; border-left: 4px solid transparent; }
 .flash-success { border-left-color: #22c55e; }
 .flash-error { border-left-color: #ef4444; padding: 1rem; font-weight: 300;}
+.alerta-roja-flash {
+    animation: pulse-red 1s infinite;
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.8);
+}
+@keyframes pulse-red {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}

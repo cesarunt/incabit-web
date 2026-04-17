@@ -110,7 +110,7 @@ OV_MODEL = None
 
 # Lista completa de objetos
 COCO_CLASSES = [
-    'persona', 'bicicleta', 'carro', 'moto', 'avion', 'bus', 'tren', 'camion', 'bote', 'semaforo',
+    'persona', 'bicicleta', 'carro', 'motocicleta', 'avion', 'bus', 'tren', 'camion', 'bote', 'semaforo',
     'hidrante', 'stop', 'parquimetro', 'banca', 'pajaro', 'gato', 'perro', 'caballo', 'oveja', 'vaca',
     'elefante', 'oso', 'cebra', 'jirafa', 'mochila', 'paraguas', 'cartera', 'corbata', 'maleta', 'frisbee',
     'skis', 'snowboard', 'pelota', 'cometa', 'bate', 'guante', 'skateboard', 'tabla_surf', 'raqueta', 'botella',
@@ -120,19 +120,26 @@ COCO_CLASSES = [
     'tostadora', 'fregadero', 'refrigerador', 'libro', 'reloj', 'florero', 'tijeras', 'teddy', 'secador', 'cepillo'
 ]
 # Lista de objetos por detectar
-MIS_CLASES = ['persona', 'bicicleta', 'carro', 'moto', 'bus', 'camion', 'semaforo', 'hidrante', 'stop', 'perro', 
-                 'pajaro', 'gato', 'mochila', 'cartera', 'maleta', 'pelota', 'botella', 'copa', 'taza', 'tenedor', 
+MIS_CLASES = ['persona', 'bicicleta', 'carro', 'motocicleta', 'bus', 'camion', 'semaforo', 'hidrante', 'stop', 'perro', 
+                 'pajaro', 'gato', 'mochila', 'cartera', 'maleta', 'pelota', 'bate', 'botella', 'copa', 'taza', 'tenedor', 
                  'cuchillo', 'cuchara', 'pastel', 'silla', 'sofá', 'planta', 'cama', 'comedor', 'baño', 'tv', 'laptop', 
                  'mouse', 'teclado', 'celular', 'horno', 'refrigerador', 'libro', 'reloj', 'florero']
+# MIS_CLASES = ['persona', 'cuchillo']
+
 YOLO_CONF = 0.4
 
-def get_openvino_model():
+
+def get_openvino_model(motor):
     global OV_CORE, OV_MODEL
     if OV_MODEL is None:
         try:
             OV_CORE = Core()
             # La carpeta debe estar en la raíz de tu proyecto Incabit
-            model_path = os.path.join(os.getcwd(), "yolo11n_openvino_model", "model.xml")
+            if motor == "openvino":
+                model_path = os.path.join(os.getcwd(), "yolo11n_openvino_model", "model.xml")
+            else:
+                model_path = os.path.join(os.getcwd(), "yolo11n_openvino_model-knife", "best.xml")
+                
             if not os.path.exists(model_path):
                 print(f"ERROR: No se encontró el modelo en {model_path}")
                 return None
@@ -573,9 +580,6 @@ def api_procesar_frame_cpu():
     data = request.get_json(silent=True) or {}
     frame_data = data.get("frame")
 
-    # LLAMADA CORREGIDA:
-    # Asegúrate de que procesar_frame_yolo_desde_base64 devuelva un DICCIONARIO, 
-    # no un jsonify().
     resultado = procesar_frame_yolo_desde_base64(frame_data)
 
     # Si resultado ya es un diccionario, esto funcionará:
@@ -591,13 +595,14 @@ def api_procesar_frame_cpu():
 @app.route("/api/emergencia/procesar-frame-openvino", methods=["POST"])
 def api_procesar_frame_openvino():
 
-    model = get_openvino_model()
+    data = request.get_json() or {}
+    frame_data = data.get("frame");
+    current_motor = data.get("motor");
+
+    model = get_openvino_model(current_motor);
+
     if not model:
         return jsonify({"ok": False, "error": "Motor OpenVINO no disponible"}), 500
-
-    data = request.get_json() or {}
-    # frame_b64 = data.get("imagen_final")
-    frame_data = data.get("frame")
     
     try:
         _, encoded = frame_data.split(",", 1)
@@ -660,12 +665,6 @@ def api_procesar_frame_openvino():
                 elif clase_real in MIS_CLASES:
                     conteo_grupos["otros"] += 1
 
-                # CORRECCIÓN AQUÍ: No sumamos de nuevo, usamos x1, y1, x2, y2 directamente
-                # final_objs.append({
-                #     "clase": clase_real,
-                #     "confianza": round(confidences[i], 2),
-                #     "bbox": [boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3]]
-                # })
                 final_objs.append({
                     "clase": clase_real,
                     "confianza": round(confidences[i], 2),

@@ -8,7 +8,8 @@
         <!-- Estado inicial -->
         <div id="bloque-inicial" class="hero-actions" style="margin: 24px auto; display: block !important; text-align: center;">
             <!-- <button type="button" class="btn" id="btn-iniciar-gpu" style="width: 190px;">Iniciar Transmisión GPU (runpod)</button> -->
-            <button type="button" class="btn" id="btn-iniciar-openvino" style="width: 190px;">Iniciar Transmisión</button>
+            <button type="button" class="btn" id="btn-iniciar-openvino" style="width: 190px;">Detección de Objetos</button>
+            <!-- <button type="button" class="btn" id="btn-iniciar-openvino-knife" style="width: 190px;">Detección de Cuchillos</button> -->
         </div>
 
         <!-- Mensaje final -->
@@ -47,6 +48,13 @@
 </section>
 
 <section class="section" id="panel-transmision" style="display: none;">
+    <div id="alerta-asalto" style="display: none; position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%); 
+        z-index: 100; width: 90%; max-width: 400px;">
+        <article class="card alerta-roja-flash" style="background: rgba(220, 38, 38, 0.9); border: 2px solid #fff; text-align: center; padding: 15px;">
+            <h3 style="color: white; margin: 0; font-size: 1.4rem;">⚠️ ALERTA DE ROBO O ASALTO</h3>
+            <p style="color: white; margin: 5px 0 0 0; font-size: 0.9rem;">Detección de elementos sospechosos en curso</p>
+        </article>
+    </div>
     <div class="container cards cards">
 
         <article class="card">
@@ -116,6 +124,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // const btnIniciarPrincipal = document.getElementById("btn-iniciar-gpu");
     const btnIniciarOpenVINO = document.getElementById("btn-iniciar-openvino");
+    const btnIniciarOpenVINOKnife = document.getElementById("btn-iniciar-openvino-knife");
     const btnDetener = document.getElementById("btn-detener");
 
     const video = document.getElementById("video");
@@ -146,7 +155,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const INTERVALO_MS = 500;
     let DURACION_SEGUNDOS = 0;       // Este valor no requiere valor inicial, el valor viene del backend
-    let motorActual = "ultralytics"; // "openvino" o "ultralytics"
+    let motorActual = "openvino"; // "openvino" o "knife"
 
     let stream = null;
     let iniciando = false;
@@ -311,7 +320,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const res = await fetch("/api/emergencia/procesar-frame-openvino", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ frame: mejorFrameProcesado })
+                    body: JSON.stringify({ frame: mejorFrameProcesado, motor: "openvino" })
                 });
                 const data = await res.json();
 
@@ -351,7 +360,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             const clase = obj.clase.toLowerCase();
 
                             // 1. DEFINICIÓN DE LA PALETA DE COLORES SEGÚN CATEGORÍA
-                            let color = "#808080"; // Gris (Otros objetos) por defecto
+                            let color = "#707070"; // Gris (Otros objetos) por defecto
                             
                             if (clase === 'persona' || clase === 'person') {
                                 color = "#FF3300"; // Rojo
@@ -362,19 +371,19 @@ document.addEventListener("DOMContentLoaded", function () {
                             }
                                                        
                             tempCtx.strokeStyle = color;
-                            tempCtx.lineWidth = 5;
+                            tempCtx.lineWidth = 4;
                             tempCtx.strokeRect(x1 * sX, y1 * sY, (x2 - x1) * sX, (y2 - y1) * sY);
                             
                             tempCtx.fillStyle = color;
-                            tempCtx.font = "bold 22px Arial"; // Fuente grande para el reporte
-                            tempCtx.fillText(`${obj.clase.toUpperCase()}`, (x1 * sX), (y1 * sY) - 11);
+                            tempCtx.font = "16px Arial";
+                            tempCtx.fillText(`${obj.clase.toUpperCase()}`, (x1 * sX), (y1 * sY) - 8);
                         });
 
                         // Sello de tiempo ÚNICO
                         const fecha = new Date().toLocaleString('es-PE');
                         tempCtx.fillStyle = "white";
                         tempCtx.font = "bold 20px Arial";
-                        tempCtx.fillText(`Incabit - ${fecha}`, 20, canvasFinal.height - 30);
+                        tempCtx.fillText(`Incabit - ${fecha}`, 20, canvasFinal.height - 25);
 
                         // Resultado final para mostrar y descargar
                         const urlFinal = canvasFinal.toDataURL("image/jpeg", 0.8);
@@ -472,13 +481,11 @@ document.addEventListener("DOMContentLoaded", function () {
         const frameData = tempCanvas.toDataURL("image/jpeg", 0.8);
 
         // ELEGIR ENDPOINT
-        const endpoint = (motorActual === "openvino") 
-            ? "/api/emergencia/procesar-frame-openvino" 
-            : "/api/emergencia/procesar-frame-ultralytics";
+        const endpoint = "/api/emergencia/procesar-frame-openvino";
         fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ frame: frameData })
+            body: JSON.stringify({ frame: frameData, motor: motorActual })
         })
 
         .then(res => res.json())
@@ -490,8 +497,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (data.ok) {
                 const listaObjetos = data.objects || [];
+                const alertaAsalto = document.getElementById("alerta-asalto");
                 const contenedorLateral = document.getElementById("lista-deteccion-lateral");
                 const itemsVertical = document.getElementById("items-deteccion-vertical");
+
+                // LÓGICA DE DETECCIÓN DE ASALTO
+                const tieneCuchillo = listaObjetos.some(obj => obj.clase.toLowerCase() === 'cuchillo');
+                const tieneMoto = listaObjetos.some(obj => obj.clase.toLowerCase() === 'motocicleta');
+                const tieneBici = listaObjetos.some(obj => obj.clase.toLowerCase() === 'botella');
+
+                // Si detectamos ambos en el mismo frame, lanzamos la alerta
+                if (tieneCuchillo || tieneMoto || tieneBici) {
+                    alertaAsalto.style.display = "block";
+                } else {
+                    // La alerta se oculta si dejan de aparecer juntos
+                    alertaAsalto.style.display = "none";
+                }
                 
                 if (listaObjetos.length > 0) {
                     contenedorLateral.style.display = "block";
@@ -594,6 +615,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Ahora los botones solo llaman a la función principal
     // btnIniciarPrincipal.addEventListener("click", () => iniciarFlujoTransmision("gpu"));
     btnIniciarOpenVINO.addEventListener("click", () => iniciarFlujoTransmision("openvino"));
+    btnIniciarOpenVINOKnife.addEventListener("click", () => iniciarFlujoTransmision("knife"));
 
     // Función genérica que contiene toda la lógica que ya tenías
     async function iniciarFlujoTransmision(motor) {
