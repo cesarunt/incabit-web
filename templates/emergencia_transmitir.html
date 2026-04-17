@@ -364,7 +364,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             
                             if (clase === 'persona' || clase === 'person') {
                                 color = "#FF3300"; // Rojo
-                            } else if (['bicicleta', 'carro', 'moto', 'bus', 'camion', 'bicycle', 'car', 'motorcycle', 'bus', 'truck'].includes(clase)) {
+                            } else if (['bicicleta', 'carro', 'motocicleta', 'bus', 'camion', 'bicycle', 'car', 'motorcycle', 'bus', 'truck'].includes(clase)) {
                                 color = "#00AAFF"; // Azul (Vehículos)
                             } else if (clase === 'perro' || clase === 'dog') {
                                 color = "#FFFF00"; // Amarillo (Perros)
@@ -504,7 +504,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // LÓGICA DE DETECCIÓN DE ASALTO
                 const tieneCuchillo = listaObjetos.some(obj => obj.clase.toLowerCase() === 'cuchillo');
                 const tieneMoto = listaObjetos.some(obj => obj.clase.toLowerCase() === 'motocicleta');
-                const tieneBici = listaObjetos.some(obj => obj.clase.toLowerCase() === 'botella');
+                const tieneBici = listaObjetos.some(obj => obj.clase.toLowerCase() === 'bicicleta');
 
                 // Si detectamos ambos en el mismo frame, lanzamos la alerta
                 if (tieneCuchillo || tieneMoto || tieneBici) {
@@ -530,7 +530,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         let icono = "•";
                         if (nombre === "persona") icono = "👤";
                         else if (nombre === "perro") icono = "🐶"; 
-                        else if (['carro', 'moto', 'bus', 'bicicleta', 'camion'].includes(nombre)) icono = "🚗";
+                        else if (['carro', 'motocicleta', 'bus', 'bicicleta', 'camion'].includes(nombre)) icono = "🚗";
                         else icono = "📦";
                         htmlLista += `<div style="margin-bottom: 5px; font-size: 0.9rem;">
                                         ${icono} ${nombre} (${cantidad})
