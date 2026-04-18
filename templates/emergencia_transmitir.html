@@ -52,8 +52,9 @@
         z-index: 100; width: 90%; max-width: 400px;">
         <article class="card alerta-roja-flash" style="background: rgba(220, 38, 38, 0.9); border: 2px solid #fff; text-align: center; padding: 15px;">
             <h3 style="color: white; margin: 0; font-size: 1.4rem;">⚠️ ALERTA DE ROBO O ASALTO</h3>
-            <p style="color: white; margin: 5px 0 0 0; font-size: 0.9rem;">Detección de elementos sospechosos en curso</p>
+            <p id="alerta-subtitulo" style="color: white; margin: 5px 0 0 0; font-size: 0.9rem;">Analizando entorno...</p>
         </article>
+        <audio id="sonido-sirena" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
     </div>
     <div class="container cards cards">
 
@@ -68,7 +69,7 @@
                 <div id="lista-deteccion-lateral" style="position: absolute; top: 6px; right: 4px; z-index: 20; background: rgba(0, 0, 0, 0.6); 
                         color: white; padding: 15px; border-radius: 10px; font-family: 'Courier New', Courier, monospace; text-align: left; 
                         min-width: 150px; border-left: 3px solid #0071c5; display: none;">
-                    <div style="font-size: 0.85rem; color: #FFF; margin-bottom: 7px; border-bottom: 1px solid #666;">DETECCIONES</div>
+                    <div style="font-size: 0.85rem; color: #FFF; margin-bottom: 7px; border-bottom: 1px solid #666;"><b>DETECCIONES</b></div>
                     <div id="items-deteccion-vertical"></div>
                 </div>
             </div>
@@ -197,50 +198,6 @@ document.addEventListener("DOMContentLoaded", function () {
         canvasDeteccion.width = video.videoWidth;
         canvasDeteccion.height = video.videoHeight;
         ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
-
-        // if (!conteo || conteo.personas === undefined) return;
-
-        // // 1. Configuración de estilo y separador
-        // ctx.font = "bold 18px Arial";
-        // const separador = "   ";
-        
-        // // 2. Definir los segmentos y sus valores para la lógica de color
-        // const segmentos = [
-        //     { texto: `Personas: ${conteo.personas}`, valor: conteo.personas },
-        //     { texto: `Vehículos: ${conteo.vehiculos}`, valor: conteo.vehiculos },
-        //     { texto: `Otros objetos: ${conteo.otros}`, valor: conteo.otros }
-        // ];
-
-        // // 3. Calcular el ancho total de todos los segmentos para centrar el banner
-        // let anchoTotal = 0;
-        // segmentos.forEach((s, i) => {
-        //     anchoTotal += ctx.measureText(s.texto).width;
-        //     if (i < segmentos.length - 1) anchoTotal += ctx.measureText(separador).width;
-        // });
-
-        // 4. Dibujar fondo negro semi-transparente
-        // ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-        // ctx.fillRect(0, 0, canvasDeteccion.width, 35);
-
-        // 5. Dibujar cada segmento con su color correspondiente
-        // let xPos = (canvasDeteccion.width / 2) - (anchoTotal / 2);
-        // const yPos = 30; // Altura del texto dentro del banner
-
-        // segmentos.forEach((s, i) => {
-        //     // LÓGICA DE COLOR: Verde (#00FF00) si detecta algo, Amarillo (#FFFF00) si es cero
-        //     ctx.fillStyle = s.valor > 0 ? "#00FF00" : "#FFFF00";
-        //     ctx.fillText(s.texto, xPos, yPos);
-            
-        //     // Avanzamos el puntero X según el ancho del texto recién dibujado
-        //     xPos += ctx.measureText(s.texto).width;
-
-        //     // Dibujar el separador siempre en amarillo para mantener la estructura
-        //     if (i < segmentos.length - 1) {
-        //         ctx.fillStyle = "#FFFF00";
-        //         ctx.fillText(separador, xPos, yPos);
-        //         xPos += ctx.measureText(separador).width;
-        //     }
-        // });
     }
 
     function limpiarPanel() {
@@ -363,7 +320,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             let color = "#707070"; // Gris (Otros objetos) por defecto
                             
                             if (clase === 'persona' || clase === 'person') {
-                                color = "#FF3300"; // Rojo
+                                color = "#33FF33"; // Verde
                             } else if (['bicicleta', 'carro', 'motocicleta', 'bus', 'camion', 'bicycle', 'car', 'motorcycle', 'bus', 'truck'].includes(clase)) {
                                 color = "#00AAFF"; // Azul (Vehículos)
                             } else if (clase === 'perro' || clase === 'dog') {
@@ -490,13 +447,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
         .then(res => res.json())
         .then(data => {
-            if (!data.ok) {
-                procesando = false;
-                return;
-            }
+            if (!data.ok) { procesando = false; return; }
 
             if (data.ok) {
                 const listaObjetos = data.objects || [];
+                const clasesCriticas = ['cuchillo', 'bicicleta', 'motocicleta'];
+
+                // --- LÓGICA DE ALERTA DINÁMICA ---
+                const alertaBanner = document.getElementById("alerta-asalto");
+                const alertaSubtitulo = document.getElementById("alerta-subtitulo");
+                const sirena = document.getElementById("sonido-sirena");
+
                 const alertaAsalto = document.getElementById("alerta-asalto");
                 const contenedorLateral = document.getElementById("lista-deteccion-lateral");
                 const itemsVertical = document.getElementById("items-deteccion-vertical");
@@ -509,11 +470,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Si detectamos ambos en el mismo frame, lanzamos la alerta
                 if (tieneCuchillo || tieneMoto || tieneBici) {
                     alertaAsalto.style.display = "block";
+                    // Reproducir sonido si no está sonando ya
+                    if (sirena.paused) sirena.play().catch(e => console.log("Audio bloqueado por navegador"));
+                } else if (tieneMoto) {
+                    alertaBanner.style.display = "block";
+                    alertaSubtitulo.textContent = "Elemento sospechoso detectado: motocicleta";
+                } else if (tieneBici) {
+                    alertaBanner.style.display = "block";
+                    alertaSubtitulo.textContent = "Elemento sospechoso detectado: bicicleta";
+                } else if (tieneCuchillo) {
+                    alertaBanner.style.display = "block";
+                    alertaSubtitulo.textContent = "Elemento sospechoso detectado: cuchillo";
                 } else {
-                    // La alerta se oculta si dejan de aparecer juntos
-                    alertaAsalto.style.display = "none";
+                    alertaBanner.style.display = "none";
+                    sirena.pause();
+                    sirena.currentTime = 0;
                 }
-                
+
                 if (listaObjetos.length > 0) {
                     contenedorLateral.style.display = "block";
                     
@@ -541,7 +514,32 @@ document.addEventListener("DOMContentLoaded", function () {
                     contenedorLateral.style.display = "none";
                 }
                 
-                dibujarDetecciones(data.conteo); // Esto ahora solo limpia el canvas
+                // dibujarDetecciones(data.conteo); // Esto ahora solo limpia el canvas
+
+                // --- DIBUJO SELECTIVO DE RECUADROS EN TIEMPO REAL ---
+                // Ajustar dimensiones del canvas de dibujo al video actual
+                canvasDeteccion.width = video.videoWidth;
+                canvasDeteccion.height = video.videoHeight;
+                ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
+
+                // Solo dibujamos si el objeto es de las clases que pediste
+                listaObjetos.forEach(obj => {
+                    const claseNom = obj.clase.toLowerCase();
+                    
+                    if (clasesCriticas.includes(claseNom)) {
+                        const [x1, y1, x2, y2] = obj.bbox;
+                        
+                        // Dibujamos el recuadro siempre en ROJO
+                        ctx.strokeStyle = "#FF3300";    // Rojo
+                        ctx.lineWidth = 4;
+                        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                        
+                        // Dibujamos la etiqueta
+                        ctx.fillStyle = "#FF0000";
+                        ctx.font = "16px Arial";
+                        ctx.fillText(claseNom.toUpperCase(), x1, y1 - 8);
+                    }
+                });
 
                 if (data.conteo) {
                     // 1. Actualizar los contadores grandes (opcional si ya tienes el texto)

@@ -110,21 +110,22 @@ OV_MODEL = None
 
 # Lista completa de objetos
 COCO_CLASSES = [
-    'persona', 'bicicleta', 'carro', 'motocicleta', 'avion', 'bus', 'tren', 'camion', 'bote', 'semaforo',
-    'hidrante', 'stop', 'parquimetro', 'banca', 'pajaro', 'gato', 'perro', 'caballo', 'oveja', 'vaca',
-    'elefante', 'oso', 'cebra', 'jirafa', 'mochila', 'paraguas', 'cartera', 'corbata', 'maleta', 'frisbee',
-    'skis', 'snowboard', 'pelota', 'cometa', 'bate', 'guante', 'skateboard', 'tabla_surf', 'raqueta', 'botella',
-    'copa', 'taza', 'tenedor', 'cuchillo', 'cuchara', 'tazon', 'banana', 'manzana', 'sandwich', 'naranja',
-    'brócoli', 'zanahoria', 'hot_dog', 'pizza', 'dona', 'pastel', 'silla', 'sofá', 'planta', 'cama',
-    'comedor', 'baño', 'tv', 'laptop', 'mouse', 'control', 'teclado', 'celular', 'microondas', 'horno',
-    'tostadora', 'fregadero', 'refrigerador', 'libro', 'reloj', 'florero', 'tijeras', 'teddy', 'secador', 'cepillo'
+        'persona', 'bicicleta', 'carro', 'motocicleta', 'avion', 'bus', 'tren', 'camion', 'bote', 'semaforo',
+        'hidrante', 'stop', 'parquimetro', 'banca', 'pajaro', 'gato', 'perro', 'caballo', 'oveja', 'vaca',
+        'elefante', 'oso', 'cebra', 'jirafa', 'mochila', 'paraguas', 'cartera', 'corbata', 'maleta', 'frisbee',
+        'skis', 'snowboard', 'pelota', 'cometa', 'bate', 'guante', 'skateboard', 'tabla_surf', 'raqueta', 'botella',
+        'copa', 'taza', 'tenedor', 'cuchillo', 'cuchara', 'tazon', 'banana', 'manzana', 'sandwich', 'naranja',
+        'brócoli', 'zanahoria', 'hot_dog', 'pizza', 'dona', 'pastel', 'silla', 'sofá', 'planta', 'cama',
+        'comedor', 'baño', 'tv', 'laptop', 'mouse', 'control', 'teclado', 'celular', 'microondas', 'horno',
+        'tostadora', 'fregadero', 'refrigerador', 'libro', 'reloj', 'florero', 'tijeras', 'teddy', 'secador', 'cepillo'
 ]
 # Lista de objetos por detectar
-MIS_CLASES = ['persona', 'bicicleta', 'carro', 'motocicleta', 'bus', 'camion', 'semaforo', 'hidrante', 'stop', 'perro', 
-                 'pajaro', 'gato', 'mochila', 'cartera', 'maleta', 'pelota', 'bate', 'botella', 'copa', 'taza', 'tenedor', 
-                 'cuchillo', 'cuchara', 'pastel', 'silla', 'sofá', 'planta', 'cama', 'comedor', 'baño', 'tv', 'laptop', 
-                 'mouse', 'teclado', 'celular', 'horno', 'refrigerador', 'libro', 'reloj', 'florero']
-# MIS_CLASES = ['persona', 'cuchillo']
+MIS_CLASES = [
+        'persona', 'bicicleta', 'carro', 'motocicleta', 'bus', 'camion', 'semaforo', 'hidrante', 'stop', 'perro', 
+        'pajaro', 'gato', 'mochila', 'cartera', 'maleta', 'pelota', 'bate', 'botella', 'copa', 'taza', 'tenedor', 
+        'cuchillo', 'cuchara', 'pastel', 'silla', 'sofá', 'planta', 'cama', 'comedor', 'baño', 'tv', 'laptop', 
+        'mouse', 'teclado', 'celular', 'horno', 'refrigerador', 'libro', 'reloj', 'florero'
+]
 
 YOLO_CONF = 0.4
 
