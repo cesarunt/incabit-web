@@ -451,19 +451,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (data.ok) {
                 const listaObjetos = data.objects || [];
-                const clasesCriticas = ['cuchillo', 'bicicleta', 'motocicleta'];
+                const clasesCriticas = ['tv', 'bicicleta', 'motocicleta'];
 
                 // --- LÓGICA DE ALERTA DINÁMICA ---
-                const alertaBanner = document.getElementById("alerta-asalto");
+                const alertaAsalto = document.getElementById("alerta-asalto");
                 const alertaSubtitulo = document.getElementById("alerta-subtitulo");
                 const sirena = document.getElementById("sonido-sirena");
-
-                const alertaAsalto = document.getElementById("alerta-asalto");
                 const contenedorLateral = document.getElementById("lista-deteccion-lateral");
                 const itemsVertical = document.getElementById("items-deteccion-vertical");
 
                 // LÓGICA DE DETECCIÓN DE ASALTO
-                const tieneCuchillo = listaObjetos.some(obj => obj.clase.toLowerCase() === 'cuchillo');
+                const tieneCuchillo = listaObjetos.some(obj => obj.clase.toLowerCase() === 'tv');
                 const tieneMoto = listaObjetos.some(obj => obj.clase.toLowerCase() === 'motocicleta');
                 const tieneBici = listaObjetos.some(obj => obj.clase.toLowerCase() === 'bicicleta');
 
@@ -473,16 +471,17 @@ document.addEventListener("DOMContentLoaded", function () {
                     // Reproducir sonido si no está sonando ya
                     if (sirena.paused) sirena.play().catch(e => console.log("Audio bloqueado por navegador"));
                 } else if (tieneMoto) {
-                    alertaBanner.style.display = "block";
+                    alertaAsalto.style.display = "block";
                     alertaSubtitulo.textContent = "Elemento sospechoso detectado: motocicleta";
                 } else if (tieneBici) {
-                    alertaBanner.style.display = "block";
+                    alertaAsalto.style.display = "block";
                     alertaSubtitulo.textContent = "Elemento sospechoso detectado: bicicleta";
                 } else if (tieneCuchillo) {
-                    alertaBanner.style.display = "block";
-                    alertaSubtitulo.textContent = "Elemento sospechoso detectado: cuchillo";
+                    alertaAsalto.style.display = "block";
+                    alertaSubtitulo.textContent = "Elemento sospechoso detectado: tv";
+                    if (sirena.paused) sirena.play().catch(e => console.log("Alerta de TV"));
                 } else {
-                    alertaBanner.style.display = "none";
+                    alertaAsalto.style.display = "none";
                     sirena.pause();
                     sirena.currentTime = 0;
                 }
@@ -530,14 +529,14 @@ document.addEventListener("DOMContentLoaded", function () {
                         const [x1, y1, x2, y2] = obj.bbox;
                         
                         // Dibujamos el recuadro siempre en ROJO
-                        ctx.strokeStyle = "#FF3300";    // Rojo
-                        ctx.lineWidth = 4;
-                        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                        // ctx.strokeStyle = "#FF3300";    // Rojo
+                        // ctx.lineWidth = 4;
+                        // ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
                         
                         // Dibujamos la etiqueta
-                        ctx.fillStyle = "#FF0000";
-                        ctx.font = "16px Arial";
-                        ctx.fillText(claseNom.toUpperCase(), x1, y1 - 8);
+                        ctx.fillStyle = "#FF3300";
+                        ctx.font = "bold 16px Arial";
+                        ctx.fillText(claseNom.toUpperCase(), x1, y1);
                     }
                 });
 
