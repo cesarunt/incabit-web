@@ -94,7 +94,7 @@ yolo_model = None
 # CONFIGURACIÓN TRANSMISIÓN
 # =========================================================
 TRANSMISSION_DURATION_SECONDS = 24
-TRANSMISSION_GRACE_SECONDS = 5
+TRANSMISSION_GRACE_SECONDS = 2
 
 # =========================================================
 # CONFIGURACIÓN RUNPOD

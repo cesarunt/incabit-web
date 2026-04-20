@@ -9,7 +9,6 @@
         <div id="bloque-inicial" class="hero-actions" style="margin: 24px auto; display: block !important; text-align: center;">
             <!-- <button type="button" class="btn" id="btn-iniciar-gpu" style="width: 190px;">Iniciar Transmisión GPU (runpod)</button> -->
             <button type="button" class="btn" id="btn-iniciar-openvino" style="width: 190px;">Detección de Objetos</button>
-            <!-- <button type="button" class="btn" id="btn-iniciar-openvino-knife" style="width: 190px;">Detección de Cuchillos</button> -->
         </div>
 
         <!-- Mensaje final -->
@@ -21,7 +20,7 @@
 
         <div id="resultado-final" style="display:none; margin-top: 24px;">
             <article class="card" style="text-align: center;">
-                <div id="final-resumen-items" style="margin-top: 5px; font-size: 16px; display: inline-flex;">
+                <div id="final-resumen-items" style="font-size: 16px; display: inline-flex;">
                     <span id="fila-final-personas"> 👤 : <b id="final-personas">0</b></span> &nbsp;
                     <span id="fila-final-vehiculos">🚗 : <b id="final-vehiculos">0</b></span> &nbsp;
                     <span id="fila-final-perros"> 🐶 : <b id="final-perros">0</b></span> &nbsp;
@@ -50,14 +49,12 @@
 <section class="section" id="panel-transmision" style="display: none;">
     <div id="alerta-asalto" style="display: none; position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%); 
         z-index: 100; width: 90%; max-width: 400px;">
-        <article class="card alerta-roja-flash" style="background: rgba(220, 38, 38, 0.9); border: 2px solid #fff; text-align: center; padding: 15px;">
-            <h3 style="color: white; margin: 0; font-size: 1.4rem;">⚠️ ALERTA DE ROBO O ASALTO</h3>
-            <p id="alerta-subtitulo" style="color: white; margin: 5px 0 0 0; font-size: 0.9rem;">Analizando entorno...</p>
+        <article class="card alerta-roja-flash" style="background: rgba(220, 38, 38, 0.9); border: 2px solid #fff; text-align: center; padding: 8px 12px;">
+            <h3 style="color: white; margin: 0; font-size: 1.25rem;">⚠️ ALERTA ⚠️</h3>
+            <p id="alerta-subtitulo" style="color: white; margin: 5px 0 0 0; font-size: 1.1rem;">...</p>
         </article>
-        <audio id="sonido-sirena" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
     </div>
     <div class="container cards cards">
-
         <article class="card">
             <div class="contenedor-video" style="position: relative; width: 100%; max-width: 640px; margin: 0 auto;">
                 <video id="video" autoplay playsinline muted 
@@ -125,7 +122,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // const btnIniciarPrincipal = document.getElementById("btn-iniciar-gpu");
     const btnIniciarOpenVINO = document.getElementById("btn-iniciar-openvino");
-    const btnIniciarOpenVINOKnife = document.getElementById("btn-iniciar-openvino-knife");
     const btnDetener = document.getElementById("btn-detener");
 
     const video = document.getElementById("video");
@@ -153,6 +149,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const finalOtros = document.getElementById("final-otros");
     const finalImagen = document.getElementById("final-imagen");
     const btnDescargarImagen = document.getElementById("btn-descargar-imagen");
+    const itemsVertical = document.getElementById("items-deteccion-vertical");
 
     const INTERVALO_MS = 500;
     let DURACION_SEGUNDOS = 0;       // Este valor no requiere valor inicial, el valor viene del backend
@@ -198,6 +195,35 @@ document.addEventListener("DOMContentLoaded", function () {
         canvasDeteccion.width = video.videoWidth;
         canvasDeteccion.height = video.videoHeight;
         ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
+    }
+
+    function reproducirSirenaSeguridad() {
+        // Creamos el contexto de audio
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        // Tipo de onda: 'sine' es suave, 'triangle' o 'sawtooth' suenan más agresivos
+        oscillator.type = 'triangle';
+
+        // --- EFECTO DE SIRENA (Frecuencia que sube y baja) ---
+        const tiempo = audioCtx.currentTime;
+        oscillator.frequency.setValueAtTime(500, tiempo);
+        // Subida y bajada rápida en 2 segundos
+        oscillator.frequency.exponentialRampToValueAtTime(1000, tiempo + 0.5);
+        oscillator.frequency.exponentialRampToValueAtTime(500, tiempo + 1.0);
+        oscillator.frequency.exponentialRampToValueAtTime(1000, tiempo + 1.5);
+        oscillator.frequency.exponentialRampToValueAtTime(500, tiempo + 2.0);
+
+        // Volumen controlado para no saturar
+        gainNode.gain.setValueAtTime(0.2, tiempo);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, tiempo + 2.0); // Desvanecimiento final
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.start();
+        oscillator.stop(tiempo + 2); // Se detiene exactamente a los 2 segundos
     }
 
     function limpiarPanel() {
@@ -424,7 +450,7 @@ document.addEventListener("DOMContentLoaded", function () {
         procesando = true;
         estadoProceso.textContent = `Procesando ... Tiempo restante: ${segundosRestantes}s`;
 
-        // Crear un canvas temporal ajustado a la realidad del sensor del celular
+        // Crear un canvas temporal ajustado a la realidad del sensor del dispositivo
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = 640;
         // Mantenemos la proporción real (vertical u horizontal)
@@ -456,34 +482,29 @@ document.addEventListener("DOMContentLoaded", function () {
                 // --- LÓGICA DE ALERTA DINÁMICA ---
                 const alertaAsalto = document.getElementById("alerta-asalto");
                 const alertaSubtitulo = document.getElementById("alerta-subtitulo");
-                const sirena = document.getElementById("sonido-sirena");
                 const contenedorLateral = document.getElementById("lista-deteccion-lateral");
-                const itemsVertical = document.getElementById("items-deteccion-vertical");
+                // const itemsVertical = document.getElementById("items-deteccion-vertical");
 
                 // LÓGICA DE DETECCIÓN DE ASALTO
                 const tieneCuchillo = listaObjetos.some(obj => obj.clase.toLowerCase() === 'tv');
                 const tieneMoto = listaObjetos.some(obj => obj.clase.toLowerCase() === 'motocicleta');
                 const tieneBici = listaObjetos.some(obj => obj.clase.toLowerCase() === 'bicicleta');
 
-                // Si detectamos ambos en el mismo frame, lanzamos la alerta
-                if (tieneCuchillo || tieneMoto || tieneBici) {
+                if (tieneMoto) {
                     alertaAsalto.style.display = "block";
-                    // Reproducir sonido si no está sonando ya
-                    if (sirena.paused) sirena.play().catch(e => console.log("Audio bloqueado por navegador"));
-                } else if (tieneMoto) {
-                    alertaAsalto.style.display = "block";
-                    alertaSubtitulo.textContent = "Elemento sospechoso detectado: motocicleta";
+                    alertaSubtitulo.textContent = "motocicleta detectada";
+                    reproducirSirenaSeguridad();
                 } else if (tieneBici) {
                     alertaAsalto.style.display = "block";
-                    alertaSubtitulo.textContent = "Elemento sospechoso detectado: bicicleta";
+                    alertaSubtitulo.textContent = "bicicleta detectada";
+                    reproducirSirenaSeguridad();
                 } else if (tieneCuchillo) {
                     alertaAsalto.style.display = "block";
-                    alertaSubtitulo.textContent = "Elemento sospechoso detectado: tv";
-                    if (sirena.paused) sirena.play().catch(e => console.log("Alerta de TV"));
+                    alertaSubtitulo.textContent = "tv detectada";
+                    reproducirSirenaSeguridad();
                 } else {
                     alertaAsalto.style.display = "none";
-                    sirena.pause();
-                    sirena.currentTime = 0;
+                    alertaSubtitulo.textContent = "";
                 }
 
                 if (listaObjetos.length > 0) {
@@ -521,6 +542,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 canvasDeteccion.height = video.videoHeight;
                 ctx.clearRect(0, 0, canvasDeteccion.width, canvasDeteccion.height);
 
+                // Escalar cuadros (OpenVINO usa 640x640)
+                const sX = canvasDeteccion.width / 640;
+                const sY = canvasDeteccion.height / 640;
+
                 // Solo dibujamos si el objeto es de las clases que pediste
                 listaObjetos.forEach(obj => {
                     const claseNom = obj.clase.toLowerCase();
@@ -529,14 +554,16 @@ document.addEventListener("DOMContentLoaded", function () {
                         const [x1, y1, x2, y2] = obj.bbox;
                         
                         // Dibujamos el recuadro siempre en ROJO
-                        // ctx.strokeStyle = "#FF3300";    // Rojo
-                        // ctx.lineWidth = 4;
+                        ctx.strokeStyle = "#FF3300";    // Rojo
+                        ctx.lineWidth = 4;
                         // ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                        ctx.strokeRect(x1 * sX, y1 * sY, (x2 - x1) * sX, (y2 - y1) * sY);
                         
                         // Dibujamos la etiqueta
                         ctx.fillStyle = "#FF3300";
-                        ctx.font = "bold 16px Arial";
-                        ctx.fillText(claseNom.toUpperCase(), x1, y1);
+                        ctx.font = "bold 20px Arial";
+                        // ctx.fillText(claseNom.toUpperCase(), x1, y1 - 10);
+                        ctx.fillText(`${obj.clase.toUpperCase()}`, (x1 * sX), (y1 * sY) - 8);
                     }
                 });
 
@@ -612,7 +639,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // Ahora los botones solo llaman a la función principal
     // btnIniciarPrincipal.addEventListener("click", () => iniciarFlujoTransmision("gpu"));
     btnIniciarOpenVINO.addEventListener("click", () => iniciarFlujoTransmision("openvino"));
-    btnIniciarOpenVINOKnife.addEventListener("click", () => iniciarFlujoTransmision("knife"));
 
     // Función genérica que contiene toda la lógica que ya tenías
     async function iniciarFlujoTransmision(motor) {
@@ -668,6 +694,7 @@ document.addEventListener("DOMContentLoaded", function () {
         finalImagen.src = "";
         finalImagen.style.display = "none";
         btnDescargarImagen.style.display = "none";
+        itemsVertical.innerHTML = "";
 
         try {
             const res = await fetch("/api/emergencia/iniciar-transmision", {
