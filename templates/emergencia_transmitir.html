@@ -477,7 +477,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (data.ok) {
                 const listaObjetos = data.objects || [];
-                const clasesCriticas = ['tv', 'bicicleta', 'motocicleta'];
+                const clasesCriticas = ['cuchillo', 'bicicleta', 'motocicleta'];
 
                 // --- LÓGICA DE ALERTA DINÁMICA ---
                 const alertaAsalto = document.getElementById("alerta-asalto");
@@ -486,7 +486,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // const itemsVertical = document.getElementById("items-deteccion-vertical");
 
                 // LÓGICA DE DETECCIÓN DE ASALTO
-                const tieneCuchillo = listaObjetos.some(obj => obj.clase.toLowerCase() === 'tv');
+                const tieneCuchillo = listaObjetos.some(obj => obj.clase.toLowerCase() === 'cuchillo');
                 const tieneMoto = listaObjetos.some(obj => obj.clase.toLowerCase() === 'motocicleta');
                 const tieneBici = listaObjetos.some(obj => obj.clase.toLowerCase() === 'bicicleta');
 
@@ -500,7 +500,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     reproducirSirenaSeguridad();
                 } else if (tieneCuchillo) {
                     alertaAsalto.style.display = "block";
-                    alertaSubtitulo.textContent = "tv detectada";
+                    alertaSubtitulo.textContent = "cuchillo detectado";
                     reproducirSirenaSeguridad();
                 } else {
                     alertaAsalto.style.display = "none";
